@@ -38,3 +38,18 @@ int Volume::size() const {
 int VolumeShape::size() {
 	return z * c * w * h;
 }
+
+
+
+Volume6D::Volume6D(VolumeShape shape) : baseshape(shape_) {
+	VolumeShape &s(baseshape);
+	volumes.push_back(new Volume(VolumeShape{s.z, s.c, s.w, s.h}));
+	volumes.push_back(new Volume(VolumeShape{s.z, s.c, s.w, s.h}));
+
+	volumes.push_back(new Volume(VolumeShape{s.z, s.c, s.h, s.w}));
+	volumes.push_back(new Volume(VolumeShape{s.z, s.c, s.h, s.w}));
+
+	volumes.push_back(new Volume(VolumeShape{s.h, s.c, s.w, s.z}));
+	volumes.push_back(new Volume(VolumeShape{s.h, s.c, s.w, s.z}));
+
+}
