@@ -4,8 +4,6 @@
 #include <vector>
 #include "volume.h"
 
-//initially just float
-typedef F float;
 
 struct VLSTM {
 	VolumeSet3D x, rg, ig, og, c, h;
