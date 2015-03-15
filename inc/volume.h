@@ -4,7 +4,8 @@
 #include <vector>
 #include "tensor.h"
 
-typedef F float;
+//initially just float
+typedef float F;
 
 struct VolumeShape {
 	int z, c, w, h;
