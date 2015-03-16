@@ -13,11 +13,13 @@ struct VolumeShape {
 	int size();
 };
 
+std::ostream &operator<<(std::ostream &out, VolumeShape shape);
+
 struct Volume {
 	Volume(VolumeShape shape);
 
 	float *slice(int z);
-	Tensor<F> create_slice_tensor();
+	TensorShape slice_shape();
 	void zero();
 	void init_normal(F mean, F std);
 	void fill(F val);

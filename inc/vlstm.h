@@ -29,9 +29,10 @@ struct VolumeOperation : public TimeOperation
 	bool first;
 
 	VolumeSet &in, &out;
-	
+		
 	Tensor<F> in_t, out_t;
 	Tensor<F> in_err_t, out_err_t;
+
 };
 
 struct VolumeOperation2 : public TimeOperation
@@ -107,7 +108,7 @@ struct VLSTM {
 	VolumeSet x, y;
 	Volume6DSet x6, y6;
 
-	std::vector<LSTMOperation> operations;
+	std::vector<LSTMOperation*> operations;
 
 
 };

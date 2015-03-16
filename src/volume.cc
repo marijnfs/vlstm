@@ -1,10 +1,13 @@
 #include "volume.h"
 #include "util.h"
 
+using namespace std;
+
 Volume::Volume(VolumeShape shape_) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h) {
 	//handle_error( cudnnCreateTensorDescriptor(&td));
 	//handle_error( cudnnSetTensor4dDescriptor(td, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n, c, h, w)); //CUDNN_TENSOR_NHWC not supported for some reason
 	size_t even_size(((size() + 1) / 2) * 2); //we want multiple of two for curand
+	cout << "allocating volume: " << shape << " nfloats: " << even_size << endl;
 	handle_error( cudaMalloc((void**)&data, sizeof(float) * even_size) 	);
 	zero();
 }
@@ -13,8 +16,8 @@ float *Volume::slice(int z) {
 	return data + z * slice_size;
 }
 
-Tensor<F> Volume::create_slice_tensor() { 
-	return Tensor<F>(TensorShape{1, shape.c, shape.w, shape.h}, 0); //0 pointer to prevent allocation
+TensorShape Volume::slice_shape() { 
+	return TensorShape{1, shape.c, shape.w, shape.h};
 }
 
 void Volume::zero() {
@@ -37,6 +40,10 @@ int Volume::size() {
 
 int VolumeShape::size() {
 	return z * c * w * h;
+}
+
+std::ostream &operator<<(std::ostream &out, VolumeShape shape) {
+	return out << "[z:" << shape.z << " c:" << shape.c << " w:" << shape.w << " h:" << shape.h << "]";
 }
 
 VolumeSet::VolumeSet(VolumeShape shape_) : x(shape_), diff(shape_), shape(shape_) 

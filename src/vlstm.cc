@@ -5,12 +5,12 @@ using namespace std;
 
 //Volume Operation
 VolumeOperation::VolumeOperation(Operation<F> &op_, VolumeSet &in_, VolumeSet &out_, int dt_, bool first_) :
-	op(op_), T(in.x.shape.z), dt(dt_), first(first_), 
+	op(op_), T(in_.x.shape.z), dt(dt_), first(first_), 
 	in(in_), out(out_), 
-	in_t(in.x.create_slice_tensor()),
-	out_t(out.x.create_slice_tensor()), 
-	in_err_t(in.x.create_slice_tensor()),
-	out_err_t(out.x.create_slice_tensor()) 
+	in_t(in_.x.slice_shape(), 0),
+	out_t(out_.x.slice_shape(), 0), 
+	in_err_t(in_.x.slice_shape(), 0),
+	out_err_t(out_.x.slice_shape(), 0)
 {}
 
 void VolumeOperation::forward(int t) {
@@ -40,13 +40,13 @@ void VolumeOperation::forward_dry_run() {
 
 //Volume Operation, 2 inputs
 VolumeOperation2::VolumeOperation2(Operation2<F> &op_, VolumeSet &in_, VolumeSet &in2_, VolumeSet &out_, int dt_, bool first_) :
-	op(op_),T(in.x.shape.z), dt(dt_), in(in_), first(first_), in2(in2_), out(out_), 
-	in_t(in.x.create_slice_tensor()),
-	in2_t(in2.x.create_slice_tensor()),
-	out_t(out.x.create_slice_tensor()), 
-	in_err_t(in.x.create_slice_tensor()),
-	in2_err_t(in2.x.create_slice_tensor()),
-	out_err_t(out.x.create_slice_tensor()) 
+	op(op_),T(in_.x.shape.z), dt(dt_), in(in_), first(first_), in2(in2_), out(out_), 
+	in_t(in_.x.slice_shape(), 0),
+	in2_t(in2_.x.slice_shape(), 0),
+	out_t(out_.x.slice_shape(), 0), 
+	in_err_t(in_.x.slice_shape(), 0),
+	in2_err_t(in2_.x.slice_shape(), 0),
+	out_err_t(out_.x.slice_shape(), 0) 
 {}
 
 void VolumeOperation2::forward(int t) {
@@ -176,6 +176,7 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 	VolumeSet &out(*volumes[outs]);
 
 	int dt = delay ? 1 : 0;
+   
 	operations.push_back(new VolumeOperation(op, in, out, dt, first));
 }
 
@@ -222,13 +223,13 @@ VLSTM::VLSTM(VolumeShape s, int kg, int ko, int c):
 	y6(VolumeShape{s.z, c, s.w, s.h})
 {
 	for (size_t i(0); i < 6; ++i)
-		operations.push_back(LSTMOperation(*x6.volumes[i], *y6.volumes[i], kg, ko, c));
+		operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
 }
 
 void VLSTM::forward() {
 	divide(x.x, x6.x);
 	for (auto &op : operations)
-		op.forward();
+		op->forward();
 	combine(y6.x, y.x);
 }
 
@@ -236,7 +237,7 @@ void VLSTM::backward() {
 	divide(y.diff, y6.diff);
 
 	for (int i(operations.size() - 1); i > 0; --i)
-		operations[i].backward();
+		operations[i]->backward();
 
 	combine(x6.diff, x.diff);
 }

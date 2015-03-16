@@ -43,8 +43,13 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float cons
 void divide(Volume &v, vector<Volume*> &to) {
 	VolumeShape shape = v.shape;
 
-	dim3 dimBlock( shape.w, shape.h, shape.z );
-	dim3 dimGrid( 1 );
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+	int const BW(32);
+	int const BH = BLOCKSIZE / BW;
+
+	dim3 dimBlock( BW, BH, 1 );
+	dim3 dimGrid( (shape.w - 1) / BW + 1, (shape.h - 1) / BH + 1, shape.z );
 	
 	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, v.data, 
 		to[0]->data, to[1]->data, to[2]->data, 
@@ -55,9 +60,14 @@ void divide(Volume &v, vector<Volume*> &to) {
 
 void combine(vector<Volume*> &v, Volume &to) {
 	VolumeShape shape = to.shape;
+	
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+	int const BW(32);
+	int const BH = BLOCKSIZE / BW;
 
-	dim3 dimBlock( shape.w, shape.h, shape.z );
-	dim3 dimGrid( 1 );
+	dim3 dimBlock( BW, BH, 1 );
+	dim3 dimGrid( (shape.w - 1) / BW + 1, (shape.h - 1) / BH + 1, shape.z );
 	
 	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data, 
 		v[0]->data, v[1]->data, v[2]->data, 
