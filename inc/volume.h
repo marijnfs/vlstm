@@ -29,12 +29,24 @@ struct Volume {
 };
 
 struct VolumeSet {
+	VolumeSet(VolumeShape shape);
+
 	Volume x, diff;
+	VolumeShape shape;
 };
 
-struct VolumeSet3D {
-	VolumeSet3D(VolumeShape shape);
-	std::vector<VolumeSet> volumes;
+struct Volume6D {
+	// order: [x,y,z], [y,x,z], [x, z, y]
+	//
+
+	Volume6D(VolumeShape shape);
+
+	std::vector<Volume*> volumes;
+	VolumeShape baseshape;
+};
+
+struct Volume6DSet {
+	Volume6D x, diff;
 };
 
 #endif
