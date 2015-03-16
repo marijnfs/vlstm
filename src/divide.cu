@@ -9,12 +9,14 @@ __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, float
 	if (x >= X || y >= Y || z >= Z)
 		return;
 	
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Y, Z, C, x, y, z), X, Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Y, Z, C, x, Y - y, z), X, Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(Y, X, Z, C, y, x, z), X, Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(Y, X, Z, C, y, X - x, z), X, Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Z, Y, C, x, z, y), X, Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Z, Y, C, x, Z - z, y), X, Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Y, Z, C, x, y,     z), X * Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Y, Z, C, x, y, Z - z), X * Y, C);
+
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(Z, Y, X, C, z, y,     x), Z * Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(Z, Y, X, C, z, y, X - x), Z * Y, C);
+
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Z, Y, C, x, y,     y), X * Z, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Z, Y, C, x, y, Y - y), X * Z, C);
 }
 
 __global__ void combine_kernel(int X, int Y, int Z, int C, float const *in, float *outn, float *outs, float *oute, float *outw, float *outf, float *outb) {
@@ -25,12 +27,15 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float const *in, floa
 	if (x >= X || y >= Y || z >= Z)
 		return;
 	
-	add_c(out + get_index(X, Y, Z, C, x,     y, z), X, Y, C, in + get_index(X, Y, Z, C, x, y, z));
-	add_c(out + get_index(X, Y, Z, C, x, Y - y, z), X, Y, C, in + get_index(X, Y, Z, C, x, y, z));
-	add_c(out + get_index(Y, X, Z, C, y,     x, z), X, Y, C, in + get_index(X, Y, Z, C, x, y, z));
-	add_c(out + get_index(Y, X, Z, C, y, X - x, z), X, Y, C, in + get_index(X, Y, Z, C, x, y, z));
-	add_c(out + get_index(X, Z, Y, C, x,     z, y), X, Y, C, in + get_index(X, Y, Z, C, x, y, z));
-	add_c(out + get_index(X, Z, Y, C, x, Z - z, y), X, Y, C, in + get_index(X, Y, Z, C, x, y, z));
+	add_c(out + get_index(X, Y, Z, C, x, y,     z), in + get_index(X, Y, Z, C, x, y, z), X * Y, C);
+	add_c(out + get_index(X, Y, Z, C, x, y, Z - z), in + get_index(X, Y, Z, C, x, y, z), X * Y, C);
+
+	add_c(out + get_index(Z, Y, X, C, z, y,     x), in + get_index(X, Y, Z, C, x, y, z), Z * Y, C);
+	add_c(out + get_index(Z, Y, X, C, z, y, X - x), in + get_index(X, Y, Z, C, x, y, z), Z * Y, C);
+
+	add_c(out + get_index(X, Z, Y, C, x, y,     y), in + get_index(X, Y, Z, C, x, y, z), X * Z, C);
+	add_c(out + get_index(X, Z, Y, C, x, y, Y - y), in + get_index(X, Y, Z, C, x, y, z), X * Z, C);
+
 }
 
 void divide(Volume &v, Volume6D &to) {

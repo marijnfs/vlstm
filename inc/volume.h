@@ -29,7 +29,10 @@ struct Volume {
 };
 
 struct VolumeSet {
+	VolumeSet(VolumeShape shape);
+
 	Volume x, diff;
+	VolumeShape shape;
 };
 
 struct Volume6D {

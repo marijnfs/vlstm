@@ -7,14 +7,14 @@ __device__ __forceinline__ int get_index(int X, int Y, int Z, int C, int x, int 
 	return z * (C * X * Y) + x * Y + y;
 }
 
-__device__ __forceinline__ void copy_c(float *in, float *out, int X, int Y, int C) {
+__device__ __forceinline__ void copy_c(float *in, float *out, int slicesize, int C) {
 	for (size_t c(0); c < C; ++c)
-		out[c * X * Y] = in[c * X * Y];
+		out[c * slicesize] = in[c * slicesize];
 }
 
-__device__ __forceinline__ void add_c(float *in, float *out, int X, int Y, int C) {
+__device__ __forceinline__ void add_c(float *in, float *out, int slicesize, int C) {
 	for (size_t c(0); c < C; ++c)
-		out[c * X * Y] += in[c * X * Y];
+		out[c * slicesize] += in[c * slicesize];
 }
 
 #include "divide.h"
