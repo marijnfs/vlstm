@@ -1,5 +1,7 @@
 #include "divide.h"
+#include "util.h"
 
+using namespace std;
 
 __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, float *outn, float *outs, float *oute, float *outw, float *outf, float *outb) {
 	int x(threadIdx.x + blockDim.x * blockIdx.x);
@@ -9,17 +11,17 @@ __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, float
 	if (x >= X || y >= Y || z >= Z)
 		return;
 	
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Y, Z, C, x, y,     z), X * Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Y, Z, C, x, y, Z - z), X * Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), outn + get_index(X, Y, Z, C, x, y,     z), X * Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), outs + get_index(X, Y, Z, C, x, y, Z - z), X * Y, C);
 
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(Z, Y, X, C, z, y,     x), Z * Y, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(Z, Y, X, C, z, y, X - x), Z * Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), oute + get_index(Z, Y, X, C, z, y,     x), Z * Y, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), outw + get_index(Z, Y, X, C, z, y, X - x), Z * Y, C);
 
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Z, Y, C, x, y,     y), X * Z, C);
-	copy_c(in + get_index(X, Y, Z, C, x, y, z), out + get_index(X, Z, Y, C, x, y, Y - y), X * Z, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), outf + get_index(X, Z, Y, C, x, y,     y), X * Z, C);
+	copy_c(in + get_index(X, Y, Z, C, x, y, z), outb + get_index(X, Z, Y, C, x, y, Y - y), X * Z, C);
 }
 
-__global__ void combine_kernel(int X, int Y, int Z, int C, float const *in, float *outn, float *outs, float *oute, float *outw, float *outf, float *outb) {
+__global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float const *outn, float const *outs, float const *oute, float const *outw, float const *outf, float const *outb) {
 	int x(threadIdx.x + blockDim.x * blockIdx.x);
 	int y(threadIdx.y + blockDim.y * blockIdx.y);
 	int z(threadIdx.z + blockDim.z * blockIdx.z);
@@ -27,39 +29,39 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float const *in, floa
 	if (x >= X || y >= Y || z >= Z)
 		return;
 	
-	add_c(out + get_index(X, Y, Z, C, x, y,     z), in + get_index(X, Y, Z, C, x, y, z), X * Y, C);
-	add_c(out + get_index(X, Y, Z, C, x, y, Z - z), in + get_index(X, Y, Z, C, x, y, z), X * Y, C);
+	add_c(outn + get_index(X, Y, Z, C, x, y,     z), in + get_index(X, Y, Z, C, x, y, z), X * Y, C);
+	add_c(outs + get_index(X, Y, Z, C, x, y, Z - z), in + get_index(X, Y, Z, C, x, y, z), X * Y, C);
 
-	add_c(out + get_index(Z, Y, X, C, z, y,     x), in + get_index(X, Y, Z, C, x, y, z), Z * Y, C);
-	add_c(out + get_index(Z, Y, X, C, z, y, X - x), in + get_index(X, Y, Z, C, x, y, z), Z * Y, C);
+	add_c(oute + get_index(Z, Y, X, C, z, y,     x), in + get_index(X, Y, Z, C, x, y, z), Z * Y, C);
+	add_c(outw + get_index(Z, Y, X, C, z, y, X - x), in + get_index(X, Y, Z, C, x, y, z), Z * Y, C);
 
-	add_c(out + get_index(X, Z, Y, C, x, y,     y), in + get_index(X, Y, Z, C, x, y, z), X * Z, C);
-	add_c(out + get_index(X, Z, Y, C, x, y, Y - y), in + get_index(X, Y, Z, C, x, y, z), X * Z, C);
+	add_c(outf + get_index(X, Z, Y, C, x, y,     y), in + get_index(X, Y, Z, C, x, y, z), X * Z, C);
+	add_c(outb + get_index(X, Z, Y, C, x, y, Y - y), in + get_index(X, Y, Z, C, x, y, z), X * Z, C);
 
 }
 
-void divide(Volume &v, Volume6D &to) {
+void divide(Volume &v, vector<Volume*> &to) {
 	VolumeShape shape = v.shape;
 
-	dim3 dimBlock( shape.x, shape.y, shape.z );
+	dim3 dimBlock( shape.w, shape.h, shape.z );
 	dim3 dimGrid( 1 );
 	
 	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, v.data, 
-		to.volumes[1].data, to.volumes[2].data, to.volumes[3].data, 
-		to.volumes[4].data, to.volumes[5].data, to.volumes[6].data);
+		to[0]->data, to[1]->data, to[2]->data, 
+		to[3]->data, to[4]->data, to[5]->data);
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 }
 
-void combine(Volume6D &v, Volume &to) {
+void combine(vector<Volume*> &v, Volume &to) {
 	VolumeShape shape = to.shape;
 
-	dim3 dimBlock( shape.x, shape.y, shape.z );
+	dim3 dimBlock( shape.w, shape.h, shape.z );
 	dim3 dimGrid( 1 );
 	
 	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data, 
-		v.volumes[1].data, v.volumes[2].data, v.volumes[3].data, 
-		v.volumes[4].data, v.volumes[5].data, v.volumes[6].data);
+		v[0]->data, v[1]->data, v[2]->data, 
+		v[3]->data, v[4]->data, v[5]->data);
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 }

@@ -21,7 +21,7 @@ struct Volume {
 	void zero();
 	void init_normal(F mean, F std);
 	void fill(F val);
-  	int size() const;
+  	int size();
 
 	VolumeShape shape;
 	F *data;
@@ -35,18 +35,16 @@ struct VolumeSet {
 	VolumeShape shape;
 };
 
-struct Volume6D {
+struct Volume6DSet {
 	// order: [x,y,z], [y,x,z], [x, z, y]
 	//
 
-	Volume6D(VolumeShape shape);
+	Volume6DSet(VolumeShape shape);
 
-	std::vector<Volume*> volumes;
-	VolumeShape baseshape;
+	std::vector<VolumeSet*> volumes;
+	std::vector<Volume*> x, diff;
+	VolumeShape shape;
 };
 
-struct Volume6DSet {
-	Volume6D x, diff;
-};
 
 #endif

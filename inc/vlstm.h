@@ -1,6 +1,8 @@
 #ifndef __VLSTM_H__
 #define __VLSTM_H__
 
+#include <string>
+#include <map>
 #include <vector>
 #include "volume.h"
 
@@ -14,7 +16,7 @@ struct TimeOperation {
 
 struct VolumeOperation : public TimeOperation
 {
-	VolumeOperation(Operation &op, VolumeSet &in, &out, int dt, bool first);
+	VolumeOperation(Operation<F> &op, VolumeSet &in, VolumeSet &out, int dt, bool first);
 
 	void forward(int t);
 	void backward(int t);
@@ -34,7 +36,7 @@ struct VolumeOperation : public TimeOperation
 
 struct VolumeOperation2 : public TimeOperation
 {
-	VolumeOperation2(Operation &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, bool first);
+	VolumeOperation2(Operation2<F> &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, bool first);
 
 	void forward(int t);
 	void backward(int t);
@@ -42,7 +44,7 @@ struct VolumeOperation2 : public TimeOperation
 
 	VolumeShape output_shape(VolumeShape input);
 
-	Operation<F> &op;
+	Operation2<F> &op;
 	int T, dt;
 	bool first;
 	VolumeSet &in, &in2, &out;
@@ -55,8 +57,8 @@ struct LSTMOperation {
 	LSTMOperation(VolumeShape in, int kg, int ko, int c);
 	LSTMOperation(VolumeSet &in, VolumeSet &out, int kg, int ko, int c);
 
- 	void add_op(string in, string out, Operation &op, bool delay);
- 	void add_op(string in, string in2, string out, Operation2 &op, bool delay);
+ 	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false);
+ 	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false);
 
  	void add_volume(std::string name, VolumeShape shape);
 	void add_volume(std::string name, VolumeSet &set);
@@ -69,23 +71,25 @@ struct LSTMOperation {
 
 	void add_operations();
 
-	VolumeShape output_shape(VolumeShape in, Operation &op);
+	VolumeShape output_shape(VolumeShape in, Operation<F> &op);
+	VolumeShape output_shape(VolumeShape in, Operation2<F> &op);
+
 	VolumeSet &input() { return *vin; }
 	VolumeSet &output() { return *vout; }
 
 	int T;
 
-	ConvolutionOperation xi, hi; //input gate
-	ConvolutionOperation xr, hr; //remember gate (forget gates dont make sense!)
-	ConvolutionOperation xs, hs; //cell input
-	ConvolutionOperation xo, ho, co; //output gate
+	ConvolutionOperation<F> xi, hi; //input gate
+	ConvolutionOperation<F> xr, hr; //remember gate (forget gates dont make sense!)
+	ConvolutionOperation<F> xs, hs; //cell input
+	ConvolutionOperation<F> xo, ho, co; //output gate
 
-	GateOperation		 gate;   //for gating	
-	SigmoidOperation sig;
-	TanhOperation tan;
+	GateOperation<F>		 gate;   //for gating	
+	SigmoidOperation<F> sig;
+	TanhOperation<F> tan;
 
 	VolumeShape in_shape;
- 	std::map<string, VolumeSet> volumes;
+ 	std::map<std::string, VolumeSet*> volumes;
 
  	std::vector<TimeOperation*> operations;
 
@@ -99,8 +103,6 @@ struct VLSTM {
 	void backward();
 
 	std::vector<Parametrised<F>*> params;
-	std::vector<Operation<F>*> operations;
-
 
 	VolumeSet x, y;
 	Volume6DSet x6, y6;
