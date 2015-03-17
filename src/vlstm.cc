@@ -29,10 +29,10 @@ void VolumeOperation::backward(int t) {
 	out_t.data = out.x.slice(t);
 
 	in_err_t.data = in.diff.slice(t - dt);
-	out_err_t.data = out.diff.slice(t - dt);
+	out_err_t.data = out.diff.slice(t);
 
-	op.backward(in_t, out_t, out_err_t, in_err_t);
-	op.backward_weights(in_t, out_err_t);
+	op.backward(in_t, out_t, out_err_t, in_err_t, 1.0);
+	op.backward_weights(in_t, out_err_t, 1.0);
 }
 
 void VolumeOperation::forward_dry_run() {
@@ -72,7 +72,7 @@ void VolumeOperation2::backward(int t) {
 	in2_err_t.data = in2.diff.slice(t);
 	out_err_t.data = out.diff.slice(t);
 
-	op.backward(in_t, in2_t, out_t, out_err_t, in_err_t, in2_err_t);
+	op.backward(in_t, in2_t, out_t, out_err_t, in_err_t, in2_err_t, 1.0);
 	//op.backward_weights(in_t, );
 }
 
@@ -173,8 +173,11 @@ void LSTMOperation::init_normal(F mean, F std) {
 }
 
 void LSTMOperation::update(float lr) {
-	for (auto &p : parameters)
+	for (auto &p : parameters) {
 		p->update(lr);
+		//cout << p->grad_to_vector() << endl;
+	}
+
 }
 
 void LSTMOperation::clear() {
@@ -183,6 +186,8 @@ void LSTMOperation::clear() {
 			v.second->x.zero();
 		v.second->diff.zero();
 	}
+	for (auto& p : parameters)
+		p->zero_grad();
 }
 
 void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay) {
@@ -231,8 +236,8 @@ void LSTMOperation::forward() {
 
 void LSTMOperation::backward() {
 	for (int i(T - 1); i > 0; --i)
-		for (auto &op : operations)
-			op->backward(i);
+		for (int n(operations.size() - 1); n >= 0; --n)
+			operations[n]->backward(i);
 }
 
 void LSTMOperation::forward_dry_run() {
@@ -268,19 +273,19 @@ void VLSTM::clear() {
 
 void VLSTM::forward() {
 	divide(x.x, x6.x);
-	for (auto &x : x6.x)
-		cout << x->norm() << endl;
-	throw "";
 	for (auto &op : operations)
 		op->forward();
+	for (auto &x : y6.x)
+		cout << x->norm() << endl;
 	combine(y6.x, y.x);
+
 }
 
 void VLSTM::backward() {
 	divide(y.diff, y6.diff);
 
-	for (int i(operations.size() - 1); i > 0; --i)
-		operations[i]->backward();
+	for (auto &o : operations)
+		o->backward();
 
 	combine(x6.diff, x.diff);
 }
@@ -291,6 +296,8 @@ void VLSTM::init_normal(F mean, F std) {
 }
 
 void VLSTM::update(float lr) {
-	for (auto &o : operations)
+	for (auto &o : operations) {
+		cout << "update lstm op" << endl;
 		o->update(lr);
+	}
 }

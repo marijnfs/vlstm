@@ -29,7 +29,7 @@ struct VolumeOperation : public TimeOperation
 	bool first;
 
 	VolumeSet &in, &out;
-		
+
 	Tensor<F> in_t, out_t;
 	Tensor<F> in_err_t, out_err_t;
 
@@ -74,7 +74,7 @@ struct LSTMOperation {
 	void clear();
 	void init_normal(F mean, F std);
 	void update(float lr);
-	
+
 	VolumeShape output_shape(VolumeShape in, Operation<F> &op);
 	VolumeShape output_shape(VolumeShape in, Operation2<F> &op);
 
@@ -88,7 +88,7 @@ struct LSTMOperation {
 	ConvolutionOperation<F> xs, hs; //cell input
 	ConvolutionOperation<F> xo, ho, co; //output gate
 
-	GateOperation<F>		 gate;   //for gating	
+	GateOperation<F>		 gate;   //for gating
 	SigmoidOperation<F> sig;
 	TanhOperation<F> tan;
 
@@ -102,14 +102,12 @@ struct LSTMOperation {
 
 struct VLSTM {
 	VLSTM(VolumeShape shape, int kg, int ko, int c);
-	
+
 	void forward();
 	void backward();
 	void clear();
 	void init_normal(F mean, F std);
 	void update(float lr);
-
-	std::vector<Parametrised<F>*> params;
 
 	VolumeSet x, y;
 	Volume6DSet x6, y6;

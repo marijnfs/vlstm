@@ -71,7 +71,7 @@ void combine(vector<Volume*> &v, Volume &to) {
 	dim3 dimBlock( BW, BH, 1 );
 	dim3 dimGrid( (shape.w - 1) / BW + 1, (shape.h - 1) / BH + 1, shape.z );
 
-	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data,
+	combine_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data,
 		v[0]->data, v[1]->data, v[2]->data,
 		v[3]->data, v[4]->data, v[5]->data);
 	handle_error( cudaGetLastError() );
