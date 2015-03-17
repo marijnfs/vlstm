@@ -42,17 +42,19 @@ int main() {
 		cout << "output norm: " << vlstm.y.x.norm() << endl;
 		//cout << vlstm.y.x.to_vector() << endl;
 		//cout << tif_label.to_vector() << endl;
-
+		vlstm.y.x.draw_slice("out.png", 4);
+		vlstm.x.x.draw_slice("in.png", 4);
+		tif_label.draw_slice("target.png", 4);
 	
-		vlstm.y.diff.from_volume(vlstm.y.x);
-		vlstm.y.diff -= tif_label;
+		vlstm.y.diff.from_volume(tif_label);
+		vlstm.y.diff -= vlstm.y.x;
 
 		float norm = vlstm.y.diff.norm();
 
 		cout << "diff norm: " << norm << endl;
 		cout << "backward" << endl;
 		vlstm.backward();
-		vlstm.update(-.000001);
+		vlstm.update(.0000006);
 		cout << norm << endl;
 	}
 

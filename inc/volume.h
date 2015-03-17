@@ -28,6 +28,7 @@ struct Volume {
   	float norm();
   	void from_volume(Volume &other);
   	std::vector<F> to_vector();
+	void draw_slice(std::string filename, int slice);
 
 	VolumeShape shape;
 	F *data;

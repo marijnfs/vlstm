@@ -1,5 +1,6 @@
 #include "volume.h"
 #include "util.h"
+#include "img.h"
 #include <cmath>
 
 using namespace std;
@@ -63,9 +64,16 @@ std::vector<F> Volume::to_vector() {
 	return vec;
 }
 
+void Volume::draw_slice(string filename, int slice) {
+	vector<F> data = to_vector();
+	
+	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
+}
+
 int VolumeShape::size() {
 	return z * c * w * h;
 }
+
 
 std::ostream &operator<<(std::ostream &out, VolumeShape shape) {
 	return out << "[z:" << shape.z << " c:" << shape.c << " w:" << shape.w << " h:" << shape.h << "]";
