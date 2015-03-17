@@ -24,7 +24,6 @@ void Volume::zero() {
 	handle_error( cudaMemset(data, 0, sizeof(F) * size()) );
 }
 
-
 void Volume::init_normal(F mean, F std) {
 	size_t even_size(((size() + 1) / 2) * 2);
 	handle_error( curandGenerateNormal(Handler::curand(), data, even_size, mean, std) );

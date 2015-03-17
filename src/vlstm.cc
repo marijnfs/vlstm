@@ -32,6 +32,7 @@ void VolumeOperation::backward(int t) {
 	out_err_t.data = out.diff.slice(t - dt);
 
 	op.backward(in_t, out_t, out_err_t, in_err_t);
+	op.backward_weights(in_t, out_err_t);
 }
 
 void VolumeOperation::forward_dry_run() {
@@ -72,6 +73,7 @@ void VolumeOperation2::backward(int t) {
 	out_err_t.data = out.diff.slice(t);
 
 	op.backward(in_t, in2_t, out_t, out_err_t, in_err_t, in2_err_t);
+	//op.backward_weights(in_t, );
 }
 
 void VolumeOperation2::forward_dry_run() {
@@ -165,6 +167,19 @@ VolumeShape LSTMOperation::output_shape(VolumeShape in, Operation2<F> &op) {
 	return VolumeShape{in.z, out.c, out.w, out.h};
 }
 
+void LSTMOperation::init_normal(F mean, F std) {
+	for (auto &p : parameters)
+		p->init_normal(mean, std);
+}
+
+void LSTMOperation::clear() {
+	for (auto& v : volumes) {
+		if (v.first != "x")
+			v.second->x.zero();
+		v.second->diff.zero();
+	}
+}
+
 void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay) {
 	VolumeSet &in(*volumes[ins]);
 
@@ -178,6 +193,12 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 	int dt = delay ? 1 : 0;
    
 	operations.push_back(new VolumeOperation(op, in, out, dt, first));
+	try {
+		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
+		cout << "a parameter" << endl;
+	} catch (const std::bad_cast& e) {
+		cout << "not a parameter" << endl;
+	}
 }
 
 void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay) {
@@ -210,9 +231,8 @@ void LSTMOperation::backward() {
 }
 
 void LSTMOperation::forward_dry_run() {
-	for (int i(0); i < T; ++i)
-		for (auto &op : operations)
-			op->forward_dry_run();
+	for (auto &op : operations)
+		op->forward_dry_run();
 }
 
 
@@ -224,6 +244,16 @@ VLSTM::VLSTM(VolumeShape s, int kg, int ko, int c):
 {
 	for (size_t i(0); i < 6; ++i)
 		operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
+
+	clear();
+	for (auto &op : operations)
+		op->forward_dry_run();
+}
+
+void VLSTM::clear() {
+	for (auto& o : operations) {
+		o->clear();
+	}
 }
 
 void VLSTM::forward() {
@@ -240,4 +270,9 @@ void VLSTM::backward() {
 		operations[i]->backward();
 
 	combine(x6.diff, x.diff);
+}
+
+void VLSTM::init_normal(F mean, F std) {
+	for (auto &o : operations)
+		o->init_normal(mean, std);
 }

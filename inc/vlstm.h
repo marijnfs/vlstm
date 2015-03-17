@@ -71,6 +71,8 @@ struct LSTMOperation {
  	void backward();
 
 	void add_operations();
+	void clear();
+	void init_normal(F mean, F std);
 
 	VolumeShape output_shape(VolumeShape in, Operation<F> &op);
 	VolumeShape output_shape(VolumeShape in, Operation2<F> &op);
@@ -93,7 +95,7 @@ struct LSTMOperation {
  	std::map<std::string, VolumeSet*> volumes;
 
  	std::vector<TimeOperation*> operations;
-
+	std::vector<Parametrised<F>*> parameters;
  	VolumeSet *vin, *vout;
 };
 
@@ -102,6 +104,8 @@ struct VLSTM {
 	
 	void forward();
 	void backward();
+	void clear();
+	void init_normal(F mean, F std);
 
 	std::vector<Parametrised<F>*> params;
 
