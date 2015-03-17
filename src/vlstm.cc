@@ -273,8 +273,31 @@ void VLSTM::clear() {
 
 void VLSTM::forward() {
 	divide(x.x, x6.x);
-	for (auto &op : operations)
-		op->forward();
+	/*
+	x6.x[0]->zero();
+	x6.x[1]->zero();
+	x6.x[2]->zero();
+	x6.x[3]->zero();
+	x6.x[4]->zero();
+	x6.x[5]->zero();
+	//x6.x[0]->draw_slice("x0.png", 3);
+	//x6.x[1]->draw_slice("x1.png", 3);
+	//x6.x[2]->draw_slice("x2.png", 3);
+	//x6.x[3]->draw_slice("x3.png", 3);
+	//x6.x[4]->draw_slice("x4.png", 3);
+	//x6.x[5]->draw_slice("x5.png", 3);
+
+	x.x.zero();
+	x.x.draw_slice("xold.png", 3);
+	combine(x6.x, x.x);
+	x.x.draw_slice("xnew.png", 3);
+	*/
+
+	for (size_t n(2); n < 4; ++n)
+		operations[n]->forward();
+
+	//for (auto &op : operations)
+	//		op->forward();
 	for (auto &x : y6.x)
 		cout << x->norm() << endl;
 	combine(y6.x, y.x);
@@ -284,8 +307,11 @@ void VLSTM::forward() {
 void VLSTM::backward() {
 	divide(y.diff, y6.diff);
 
-	for (auto &o : operations)
-		o->backward();
+	for (size_t n(2); n < 4; ++n)
+		operations[n]->backward();
+	
+	//for (auto &o : operations)
+	//		o->backward();
 
 	combine(x6.diff, x.diff);
 }

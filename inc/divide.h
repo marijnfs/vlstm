@@ -7,17 +7,17 @@
 #include "volume.h"
 
 __device__ __forceinline__ int get_index(int X, int Y, int Z, int C, int x, int y, int z) {
-	return z * (C * X * Y) + x * Y + y;
+	return z * (C * X * Y) + x * Y + y; //CWH, as cudnn
 }
 
-__device__ __forceinline__ void copy_c(float const *in, float *out, int slicesize, int C) {
+__device__ __forceinline__ void copy_c(float const *in, float *out, int slicesizein, int slicesizeout, int C) {
 	for (size_t c(0); c < C; ++c)
-		out[c * slicesize] = in[c * slicesize];
+		out[c * slicesizeout] = in[c * slicesizein];
 }
 
-__device__ __forceinline__ void add_c(float const *in, float *out, int slicesize, int C) {
+__device__ __forceinline__ void add_c(float const *in, float *out, int slicesizein, int slicesizeout, int C) {
 	for (size_t c(0); c < C; ++c)
-		out[c * slicesize] += in[c * slicesize];
+		out[c * slicesizeout] += in[c * slicesizein];
 }
 
 __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, 
