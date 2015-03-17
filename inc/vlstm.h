@@ -4,7 +4,10 @@
 #include <string>
 #include <map>
 #include <vector>
+
 #include "volume.h"
+#include "operations.h"
+#include "volumeoperation.h"
 
 struct LSTMOperation {
 	LSTMOperation(VolumeShape in, int kg, int ko, int c);
