@@ -4,6 +4,7 @@
 #include "volume.h"
 #include "vlstm.h"
 #include "handler.h"
+#include "tiff.h"
 
 using namespace std;
 
@@ -11,18 +12,27 @@ int main() {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
 
-	//VolumeShape shape{100, 1, 256, 256};
-	VolumeShape shape{100, 1, 128, 128};
 	int kg(3), ko(3), c(1);
 
-	Volume in_data(shape);
-	Volume out_data(shape);
+	Volume tif_data = open_tiff("7nm/input.tif");
+	Volume tif_label = open_tiff("7nm/binary-labels.tif");
 
-	in_data.init_normal(0, .5);
-	out_data.init_normal(0, .5);
+	cout << tif_data.shape << endl;
+	cout << tif_label.shape << endl;
+	//cout << tif_data.to_vector() << endl;
+	//cout << tif_label.to_vector() << endl;
+
+	//VolumeShape shape{100, 1, 256, 256};
+	//VolumeShape shape{168, 1, 255, 255};
+	VolumeShape shape = tif_data.shape;
+	// Volume in_data(shape);
+	// Volume out_data(shape);
+
+	// in_data.init_normal(0, .5);
+	// out_data.init_normal(0, .5);
 
 	VLSTM vlstm(shape, kg, ko, c);
-	vlstm.x.x.from_volume(in_data);
+	vlstm.x.x.from_volume(tif_data);
 	vlstm.init_normal(0, .05);
 
 	while (true) {
@@ -30,15 +40,19 @@ int main() {
 		cout << "forward" << endl;
 		vlstm.forward();
 		cout << "output norm: " << vlstm.y.x.norm() << endl;
+		//cout << vlstm.y.x.to_vector() << endl;
+		//cout << tif_label.to_vector() << endl;
 
+	
 		vlstm.y.diff.from_volume(vlstm.y.x);
-		vlstm.y.diff -= out_data;
+		vlstm.y.diff -= tif_label;
+
 		float norm = vlstm.y.diff.norm();
 
 		cout << "diff norm: " << norm << endl;
 		cout << "backward" << endl;
 		vlstm.backward();
-		vlstm.update(-.00001);
+		vlstm.update(-.000001);
 		cout << norm << endl;
 	}
 

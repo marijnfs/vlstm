@@ -57,6 +57,11 @@ float Volume::norm() {
 	return sqrt(result) / size();
 }
 
+std::vector<F> Volume::to_vector() {
+	vector<F> vec(size());
+	handle_error( cudaMemcpy(&vec[0], data, vec.size() * sizeof(F), cudaMemcpyDeviceToHost));
+	return vec;
+}
 
 int VolumeShape::size() {
 	return z * c * w * h;

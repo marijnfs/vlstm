@@ -27,6 +27,7 @@ struct Volume {
   	int size();
   	float norm();
   	void from_volume(Volume &other);
+  	std::vector<F> to_vector();
 
 	VolumeShape shape;
 	F *data;
@@ -38,7 +39,7 @@ Volume &operator-=(Volume &in, Volume &other);
 struct VolumeSet {
 	VolumeSet(VolumeShape shape);
 	void zero();
-	
+
 	Volume x, diff;
 	VolumeShape shape;
 
@@ -51,7 +52,7 @@ struct Volume6DSet {
 
 	Volume6DSet(VolumeShape shape);
 	void zero();
-	
+
 	std::vector<VolumeSet*> volumes;
 	std::vector<Volume*> x, diff;
 	VolumeShape shape;

@@ -15,29 +15,39 @@ inline Volume open_tiff(std::string name)
    	std::vector<std::vector<float> > v_data;
     do {
         size_t npixels;
-        uint32* raster;
 
         TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
         TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
         npixels = w * h;
 
-        std::vector<uint8> data(npixels * 4);
+		uint32 *raster = (uint32*) _TIFFmalloc(npixels * sizeof (uint32));
+
         std::vector<float> fdata;
         fdata.reserve(npixels);
         dircount++;
-        if (TIFFReadRGBAImage(tif, w, h, (uint32*) &data[0], 0)) {
-        	std::cout << int(data[0]) << " " << int(data[1]) << " " << int(data[2]) << " " << int(data[3]) << std::endl;
-        	for (size_t i(0); i < data.size(); i += 4)
-	        	fdata.push_back(static_cast<float>(data[i]) / 255.);
+        if (TIFFReadRGBAImage(tif, w, h, raster, 0)) {
+			//for (auto d : data)
+			//	std::cout << int(d) << " ";
+        	for (size_t i(0); i < npixels; ++i) {
+				uint32 val(raster[i]);
+				val = val % (1 << 8);
+				//std::cout << val << std::endl;
+	        	fdata.push_back(static_cast<float>(val) / 255.);
+			}
+			_TIFFfree(raster);
         } else {
         	throw "fail";
         }
         v_data.push_back(fdata);
+
+        if (dircount == 10)
+        	break;
+
     } while (TIFFReadDirectory(tif));
 
     Volume v(VolumeShape{dircount, 1, w, h});
     for (size_t i(0); i < v_data.size(); ++i)
-    	handle_error( cudaMemcpy(v.slice(i), &v_data[0], v_data[0].size() * sizeof(F), cudaMemcpyHostToDevice));
+    	handle_error( cudaMemcpy(v.slice(i), &v_data[i][0], v_data[i].size() * sizeof(F), cudaMemcpyHostToDevice));
     std::cout << dircount << std::endl;
     TIFFClose(tif);
     return v;
