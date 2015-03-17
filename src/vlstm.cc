@@ -58,7 +58,7 @@ void VolumeOperation2::forward(int t) {
 	in2_t.data = in2.x.slice(t);
 	out_t.data = out.x.slice(t);
 
-	op.forward(in_t, in2_t, out_t);
+	op.forward(in_t, in2_t, out_t, 1.0);
 }
 
 void VolumeOperation2::backward(int t) {
@@ -172,6 +172,11 @@ void LSTMOperation::init_normal(F mean, F std) {
 		p->init_normal(mean, std);
 }
 
+void LSTMOperation::update(float lr) {
+	for (auto &p : parameters)
+		p->update(lr);
+}
+
 void LSTMOperation::clear() {
 	for (auto& v : volumes) {
 		if (v.first != "x")
@@ -275,4 +280,9 @@ void VLSTM::backward() {
 void VLSTM::init_normal(F mean, F std) {
 	for (auto &o : operations)
 		o->init_normal(mean, std);
+}
+
+void VLSTM::update(float lr) {
+	for (auto &o : operations)
+		o->update(lr);
 }

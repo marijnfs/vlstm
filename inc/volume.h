@@ -2,6 +2,7 @@
 #define __VOLUME_H__
 
 #include <vector>
+#include <cassert>
 #include "tensor.h"
 
 //initially just float
@@ -24,11 +25,14 @@ struct Volume {
 	void init_normal(F mean, F std);
 	void fill(F val);
   	int size();
+  	float norm();
 
 	VolumeShape shape;
 	F *data;
 	int slice_size;
 };
+
+Volume &operator-=(Volume &in, Volume &other);
 
 struct VolumeSet {
 	VolumeSet(VolumeShape shape);

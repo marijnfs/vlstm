@@ -1,5 +1,6 @@
 #include "volume.h"
 #include "util.h"
+#include <cmath>
 
 using namespace std;
 
@@ -36,6 +37,19 @@ void Volume::fill(F val) {
 int Volume::size() {
 	return shape.size();
 }
+
+Volume &operator-=(Volume &in, Volume &other) {
+	assert(in.size() == other.size());
+	add_cuda<F>(other.data, in.data, in.size(), -1);
+	return in;
+}
+
+float Volume::norm() {
+	float result(0);	
+	handle_error( cublasSdot(Handler::cublas(), size(), data, 1, data, 1, &result) );
+	return sqrt(result);
+}
+
 
 int VolumeShape::size() {
 	return z * c * w * h;

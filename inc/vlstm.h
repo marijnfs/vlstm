@@ -73,7 +73,8 @@ struct LSTMOperation {
 	void add_operations();
 	void clear();
 	void init_normal(F mean, F std);
-
+	void update(float lr);
+	
 	VolumeShape output_shape(VolumeShape in, Operation<F> &op);
 	VolumeShape output_shape(VolumeShape in, Operation2<F> &op);
 
@@ -106,6 +107,7 @@ struct VLSTM {
 	void backward();
 	void clear();
 	void init_normal(F mean, F std);
+	void update(float lr);
 
 	std::vector<Parametrised<F>*> params;
 
