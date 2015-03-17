@@ -17,7 +17,7 @@ float *Volume::slice(int z) {
 	return data + z * slice_size;
 }
 
-TensorShape Volume::slice_shape() { 
+TensorShape Volume::slice_shape() {
 	return TensorShape{1, shape.c, shape.w, shape.h};
 }
 
@@ -34,6 +34,13 @@ void Volume::fill(F val) {
 	throw StringException("not implemented");
 }
 
+void Volume::from_volume(Volume &other) {
+	if (size() != other.size()) {
+ 			throw StringException("sizes don't match");
+	}
+	handle_error( cudaMemcpy(data, other.data, other.size() * sizeof(F), cudaMemcpyDeviceToDevice));
+}
+
 int Volume::size() {
 	return shape.size();
 }
@@ -45,9 +52,9 @@ Volume &operator-=(Volume &in, Volume &other) {
 }
 
 float Volume::norm() {
-	float result(0);	
+	float result(0);
 	handle_error( cublasSdot(Handler::cublas(), size(), data, 1, data, 1, &result) );
-	return sqrt(result);
+	return sqrt(result) / size();
 }
 
 
@@ -59,8 +66,13 @@ std::ostream &operator<<(std::ostream &out, VolumeShape shape) {
 	return out << "[z:" << shape.z << " c:" << shape.c << " w:" << shape.w << " h:" << shape.h << "]";
 }
 
-VolumeSet::VolumeSet(VolumeShape shape_) : x(shape_), diff(shape_), shape(shape_) 
+VolumeSet::VolumeSet(VolumeShape shape_) : x(shape_), diff(shape_), shape(shape_)
 {}
+
+void VolumeSet::zero() {
+	x.zero();
+	diff.zero();
+}
 
 Volume6DSet::Volume6DSet(VolumeShape shape_) : shape(shape_) {
 	VolumeShape &s(shape);
@@ -78,4 +90,9 @@ Volume6DSet::Volume6DSet(VolumeShape shape_) : shape(shape_) {
 		x.push_back(&(v->x));
 		diff.push_back(&(v->diff));
 	}
+}
+
+void Volume6DSet::zero() {
+	for (auto &v : volumes)
+		v->zero();
 }

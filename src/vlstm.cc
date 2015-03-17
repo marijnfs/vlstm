@@ -5,10 +5,10 @@ using namespace std;
 
 //Volume Operation
 VolumeOperation::VolumeOperation(Operation<F> &op_, VolumeSet &in_, VolumeSet &out_, int dt_, bool first_) :
-	op(op_), T(in_.x.shape.z), dt(dt_), first(first_), 
-	in(in_), out(out_), 
+	op(op_), T(in_.x.shape.z), dt(dt_), first(first_),
+	in(in_), out(out_),
 	in_t(in_.x.slice_shape(), 0),
-	out_t(out_.x.slice_shape(), 0), 
+	out_t(out_.x.slice_shape(), 0),
 	in_err_t(in_.x.slice_shape(), 0),
 	out_err_t(out_.x.slice_shape(), 0)
 {}
@@ -41,13 +41,13 @@ void VolumeOperation::forward_dry_run() {
 
 //Volume Operation, 2 inputs
 VolumeOperation2::VolumeOperation2(Operation2<F> &op_, VolumeSet &in_, VolumeSet &in2_, VolumeSet &out_, int dt_, bool first_) :
-	op(op_),T(in_.x.shape.z), dt(dt_), in(in_), first(first_), in2(in2_), out(out_), 
+	op(op_),T(in_.x.shape.z), dt(dt_), in(in_), first(first_), in2(in2_), out(out_),
 	in_t(in_.x.slice_shape(), 0),
 	in2_t(in2_.x.slice_shape(), 0),
-	out_t(out_.x.slice_shape(), 0), 
+	out_t(out_.x.slice_shape(), 0),
 	in_err_t(in_.x.slice_shape(), 0),
 	in2_err_t(in2_.x.slice_shape(), 0),
-	out_err_t(out_.x.slice_shape(), 0) 
+	out_err_t(out_.x.slice_shape(), 0)
 {}
 
 void VolumeOperation2::forward(int t) {
@@ -101,7 +101,7 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c) :
 }
 
 //Constructor if you already have sets
-LSTMOperation::LSTMOperation(VolumeSet &in, VolumeSet &out, int kg, int ko, int c) : 
+LSTMOperation::LSTMOperation(VolumeSet &in, VolumeSet &out, int kg, int ko, int c) :
 	T(in.shape.z),
 	xi(in.shape.c, c, kg, kg), hi(c, c, kg, kg), //input gate
 	xr(in.shape.c, c, kg, kg), hr(c, c, kg, kg), //remember gate (forget gates dont make sense!)
@@ -196,7 +196,7 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 	VolumeSet &out(*volumes[outs]);
 
 	int dt = delay ? 1 : 0;
-   
+
 	operations.push_back(new VolumeOperation(op, in, out, dt, first));
 	try {
 		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
@@ -244,7 +244,7 @@ void LSTMOperation::forward_dry_run() {
 //V lstm
 VLSTM::VLSTM(VolumeShape s, int kg, int ko, int c):
 	x(s), y(VolumeShape{s.z, c, s.w, s.h}),
-	x6(s), 
+	x6(s),
 	y6(VolumeShape{s.z, c, s.w, s.h})
 {
 	for (size_t i(0); i < 6; ++i)
@@ -259,10 +259,18 @@ void VLSTM::clear() {
 	for (auto& o : operations) {
 		o->clear();
 	}
+
+	//x.clear();
+	y.zero();
+	x6.zero();
+	y6.zero();
 }
 
 void VLSTM::forward() {
 	divide(x.x, x6.x);
+	for (auto &x : x6.x)
+		cout << x->norm() << endl;
+	throw "";
 	for (auto &op : operations)
 		op->forward();
 	combine(y6.x, y.x);
