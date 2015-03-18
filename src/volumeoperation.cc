@@ -20,7 +20,7 @@ void VolumeOperation::forward(int t) {
 	in_t.data = in.x.slice(t - dt);
 	out_t.data = out.x.slice(t);
 
-	op.forward(in_t, out_t);
+	op.forward(in_t, out_t, 1.0);
 }
 
 void VolumeOperation::backward(int t) {

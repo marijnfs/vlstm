@@ -2,6 +2,7 @@
 #define __VOLUMEOPERATION_H__
 
 #include "operations.h"
+#include "volume.h"
 
 struct TimeOperation {
 	virtual void forward(int t) = 0;

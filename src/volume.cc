@@ -6,13 +6,17 @@
 using namespace std;
 
 Volume::Volume(VolumeShape shape_) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h) {
-	//handle_error( cudnnCreateTensorDescriptor(&td));
-	//handle_error( cudnnSetTensor4dDescriptor(td, CUDNN_TENSOR_NCHW, CUDNN_DATA_FLOAT, n, c, h, w)); //CUDNN_TENSOR_NHWC not supported for some reason
 	size_t even_size(((size() + 1) / 2) * 2); //we want multiple of two for curand
 	cout << "allocating volume: " << shape << " nfloats: " << even_size << endl;
 	handle_error( cudaMalloc((void**)&data, sizeof(float) * even_size) 	);
 	zero();
 }
+
+Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h) {
+	data = reuse_buffer.data;
+	zero();
+}
+
 
 float *Volume::slice(int z) {
 	return data + z * slice_size;
@@ -66,7 +70,7 @@ std::vector<F> Volume::to_vector() {
 
 void Volume::draw_slice(string filename, int slice) {
 	vector<F> data = to_vector();
-	
+
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
 }
 
@@ -80,6 +84,9 @@ std::ostream &operator<<(std::ostream &out, VolumeShape shape) {
 }
 
 VolumeSet::VolumeSet(VolumeShape shape_) : x(shape_), diff(shape_), shape(shape_)
+{}
+
+VolumeSet::VolumeSet(VolumeShape shape_, VolumeSet &reuse_buffer) : x(shape_, reuse_buffer.x), diff(shape_, reuse_buffer.diff), shape(shape_)
 {}
 
 void VolumeSet::zero() {

@@ -14,8 +14,8 @@ int main() {
 
 	int kg(3), ko(3), c(1);
 
-	Volume tif_data = open_tiff("7nm/input.tif");
-	Volume tif_label = open_tiff("7nm/binary-labels.tif");
+	Volume tif_data = open_tiff("7nm/input.tif", true);
+	Volume tif_label = open_tiff("7nm/binary-labels.tif", false, true);
 
 	cout << tif_data.shape << endl;
 	cout << tif_label.shape << endl;
@@ -33,7 +33,7 @@ int main() {
 
 	VLSTM vlstm(shape, kg, ko, c);
 	vlstm.x.x.from_volume(tif_data);
-	vlstm.init_normal(0, .05);
+	vlstm.init_normal(0.0, .05);
 
 	while (true) {
 		vlstm.clear();
@@ -42,10 +42,11 @@ int main() {
 		cout << "output norm: " << vlstm.y.x.norm() << endl;
 		//cout << vlstm.y.x.to_vector() << endl;
 		//cout << tif_label.to_vector() << endl;
-		vlstm.y.x.draw_slice("out.png", 4);
-		vlstm.x.x.draw_slice("in.png", 4);
-		tif_label.draw_slice("target.png", 4);
-	
+		// vlstm.operations[4]->volumes["c"]->x.draw_slice("c.png", 4);
+		vlstm.y.x.draw_slice("out.png", 8);
+		vlstm.x.x.draw_slice("in.png", 8);
+		tif_label.draw_slice("target.png", 8);
+
 		vlstm.y.diff.from_volume(tif_label);
 		vlstm.y.diff -= vlstm.y.x;
 
@@ -54,7 +55,7 @@ int main() {
 		cout << "diff norm: " << norm << endl;
 		cout << "backward" << endl;
 		vlstm.backward();
-		vlstm.update(.0000006);
+		vlstm.update(.02);
 		cout << norm << endl;
 	}
 

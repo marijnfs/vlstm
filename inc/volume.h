@@ -18,6 +18,7 @@ std::ostream &operator<<(std::ostream &out, VolumeShape shape);
 
 struct Volume {
 	Volume(VolumeShape shape);
+	Volume(VolumeShape shape, Volume &reuse_buffer);
 
 	float *slice(int z);
 	TensorShape slice_shape();
@@ -39,6 +40,7 @@ Volume &operator-=(Volume &in, Volume &other);
 
 struct VolumeSet {
 	VolumeSet(VolumeShape shape);
+	VolumeSet(VolumeShape shape, VolumeSet &reuse_buffer);
 	void zero();
 
 	Volume x, diff;

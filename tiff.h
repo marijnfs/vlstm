@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-inline Volume open_tiff(std::string name)
+inline Volume open_tiff(std::string name, bool do_normalize = false, bool neg = false)
 {
     TIFF* tif = TIFFOpen(name.c_str(), "r");
     int dircount = 0;
@@ -31,8 +31,10 @@ inline Volume open_tiff(std::string name)
         	for (size_t i(0); i < npixels; ++i) {
 				uint32 val(raster[i]);
 				val = val % (1 << 8);
+                float fval = static_cast<float>(val) / 255.;
+                if (neg) fval = 1.0 - fval;
 				//std::cout << val << std::endl;
-	        	fdata.push_back(static_cast<float>(val) / 255.);
+	        	fdata.push_back(fval);
 			}
 			_TIFFfree(raster);
         } else {
@@ -45,6 +47,10 @@ inline Volume open_tiff(std::string name)
 
     } while (TIFFReadDirectory(tif));
 
+	if (do_normalize) {
+		for (auto &v : v_data)
+			normalize(&v);
+	}
     Volume v(VolumeShape{dircount, 1, w, h});
     for (size_t i(0); i < v_data.size(); ++i)
     	handle_error( cudaMemcpy(v.slice(i), &v_data[i][0], v_data[i].size() * sizeof(F), cudaMemcpyHostToDevice));

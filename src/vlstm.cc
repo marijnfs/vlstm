@@ -41,6 +41,10 @@ LSTMOperation::LSTMOperation(VolumeSet &in, VolumeSet &out, int kg, int ko, int 
 
 	vin = volumes["x"];
 	vout = volumes["h"];
+
+	 xr.bias.fill(2.0);
+	// xi.bias.fill(1.0);
+	// xo.bias.fill(1.0);
 }
 
 void LSTMOperation::add_operations() {
@@ -52,17 +56,18 @@ void LSTMOperation::add_operations() {
 	add_op("h", "r", hr, true);
 	add_op("r", "fr", sig);
 
-	add_op("x", "s", xi);
-	add_op("h", "s", hi, true);
+	add_op("x", "s", xs);
+	add_op("h", "s", hs, true);
 	add_op("s", "fs", tan);
 
 	add_op("fs", "fi", "c", gate);
 	add_op("c", "fr", "c", gate, true);
-	add_op("c", "fc", tan);
+	// add_op("c", "fc", tan);
+	add_op("c", "fc", sig);
 
 	add_op("x", "o", xo);
 	add_op("h", "o", ho, true);
-	add_op("c", "o", co);
+	//add_op("c", "o", co);
 	add_op("o", "fo", sig);
 
 	add_op("fc", "fo", "h", gate);
@@ -105,8 +110,9 @@ void LSTMOperation::update(float lr) {
 
 void LSTMOperation::clear() {
 	for (auto& v : volumes) {
-		if (v.first != "x")
-			v.second->x.zero();
+		// if (v.first != "x")
+		// 	v.second->x.zero();
+		v.second->x.zero();
 		v.second->diff.zero();
 	}
 	for (auto& p : parameters)
@@ -150,7 +156,7 @@ void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &
 }
 
 void LSTMOperation::forward() {
-	int T(in_shape.z);
+//	int T(in_shape.z);
 
 	for (int i(0); i < T; ++i)
 		for (auto &op : operations)
@@ -158,9 +164,14 @@ void LSTMOperation::forward() {
 }
 
 void LSTMOperation::backward() {
+	cout << "back" << endl;
 	for (int i(T - 1); i > 0; --i)
 		for (int n(operations.size() - 1); n >= 0; --n)
 			operations[n]->backward(i);
+	cout << "scaling" << endl;
+	for (auto &p : parameters)
+		p->scale_grad(1.0 / in_shape.size());
+	cout << "done" << endl;
 }
 
 void LSTMOperation::forward_dry_run() {
@@ -216,11 +227,11 @@ void VLSTM::forward() {
 	x.x.draw_slice("xnew.png", 3);
 	*/
 
-	for (size_t n(2); n < 4; ++n)
-		operations[n]->forward();
+	// for (size_t n(4); n < 5; ++n)
+	// 	operations[n]->forward();
 
-	//for (auto &op : operations)
-	//		op->forward();
+	for (auto &op : operations)
+			op->forward();
 	for (auto &x : y6.x)
 		cout << x->norm() << endl;
 	combine(y6.x, y.x);
@@ -230,11 +241,11 @@ void VLSTM::forward() {
 void VLSTM::backward() {
 	divide(y.diff, y6.diff);
 
-	for (size_t n(2); n < 4; ++n)
-		operations[n]->backward();
-	
-	//for (auto &o : operations)
-	//		o->backward();
+	// for (size_t n(4); n < 5; ++n)
+	// 	operations[n]->backward();
+
+	for (auto &o : operations)
+			o->backward();
 
 	combine(x6.diff, x.diff);
 }
