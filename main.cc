@@ -17,8 +17,8 @@ int main() {
 	int kg(7), ko(7), c(1);
 
 	Volume tiff_data = open_tiff("7nm/input.tif", true);
-	Volume tiff_label = open_tiff("7nm/input.tif", true);
-	// Volume tiff_label = open_tiff("7nm/binary-labels.tif", false, true);
+	// Volume tiff_label = open_tiff("7nm/input.tif", true);
+	Volume tiff_label = open_tiff("7nm/binary-labels.tif", false, true);
 
 	cout << tiff_data.shape << endl;
 	cout << tiff_label.shape << endl;
@@ -35,18 +35,19 @@ int main() {
 	// out_data.init_normal(0, .5);
 
 	VolumeNetwork net(shape);
-	net.add_vlstm(3, 3, 3);
+	net.add_vlstm(3, 3, 10);
 	net.add_fc(3);
 	net.add_tanh();
 	net.add_vlstm(3, 3, 3);
-	net.add_fc(1);
-	net.add_sigmoid();
+	net.add_fc(2);
+	//net.add_sigmoid();
+	net.add_softmax();
 	// net.add_tanh();
 	// net.add_tanh();
 	// net.add_fc(1);
 
 	net.finish();
-	net.init_normal(0, .1);
+	net.init_normal(0, .3);
 
 	net.set_input(tiff_data);
 	// net.volumes[0]->x.draw_slice("lala.png", 4);
@@ -57,7 +58,7 @@ int main() {
 		net.output().draw_slice("lala.png", 4);
 		cout << "loss " << net.calculate_loss(tiff_label) << endl;
 		net.backward();
-		net.update(1.);
+		net.update(10.);
 	}
 
 	// VLSTM vlstm(shape, kg, ko, c);

@@ -144,7 +144,7 @@ void LSTMOperation::backward() {
 		}
 	// cout << "scaling" << endl;
 	for (auto &p : parameters)
-		p->scale_grad(1.0 / in_shape.size());
+		p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
 	// cout << "done" << endl;
 }
 
