@@ -12,9 +12,7 @@
 struct LSTMOperation {
 	typedef std::map<std::string, VolumeSet*> VolumeSetMap;
 
-	LSTMOperation(VolumeShape in, int kg, int ko, int c);
-	LSTMOperation(VolumeSet &in, VolumeSet &out, int kg, int ko, int c);
-	LSTMOperation(VolumeSet &in, VolumeSet &out, VolumeSetMap *reuse, int kg, int ko, int c);
+	LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap *reuse = 0);
 
 	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0);
  	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false, VolumeSetMap *reuse = 0);
@@ -59,17 +57,17 @@ struct VLSTMOperation : public VolumeOperation {
 	VLSTMOperation(VolumeShape shape, int kg, int ko, int c);
 
 	void forward(Volume &in, Volume &out);
-	void backward(Volume &in, Volume &out, Volume &out_grad, Volume &in_grad);
-	VolumeShape output_shape(VolumeShape input);
+	void backward(VolumeSet &in, VolumeSet &out);
+
 	void forward_dry_run(Volume &in, Volume &out);
+	VolumeShape output_shape(VolumeShape s);
 
 	void clear();
 	void init_normal(F mean, F std);
-	//void update(float lr);
+	void update(float lr);
 
+	int c;
 	std::vector<LSTMOperation*> operations;
-
-
 };
 
 #endif

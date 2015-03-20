@@ -94,25 +94,25 @@ void VolumeSet::zero() {
 	diff.zero();
 }
 
-Volume6DSet::Volume6DSet(VolumeShape shape_) : shape(shape_) {
-	VolumeShape &s(shape);
+// Volume6DSet::Volume6DSet(VolumeShape shape_) : shape(shape_) {
+// 	VolumeShape &s(shape);
 
-	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
-	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
+// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
+// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
 
-	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
-	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
+// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
+// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
 
-	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
-	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
+// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
+// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
 
-	for (auto &v : volumes) {
-		x.push_back(&(v->x));
-		diff.push_back(&(v->diff));
-	}
-}
+// 	for (auto &v : volumes) {
+// 		x.push_back(&(v->x));
+// 		diff.push_back(&(v->diff));
+// 	}
+// }
 
-void Volume6DSet::zero() {
-	for (auto &v : volumes)
-		v->zero();
-}
+// void Volume6DSet::zero() {
+// 	for (auto &v : volumes)
+// 		v->zero();
+// }

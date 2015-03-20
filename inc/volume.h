@@ -47,17 +47,17 @@ struct VolumeSet {
 	VolumeShape shape;
 };
 
-struct Volume6DSet {
-	// order: [x,y,z], [y,x,z], [x, z, y]
-	//
+// struct Volume6DSet {
+// 	// order: [x,y,z], [y,x,z], [x, z, y]
+// 	//
 
-	Volume6DSet(VolumeShape shape);
-	void zero();
+// 	Volume6DSet(VolumeShape shape);
+// 	void zero();
 
-	std::vector<VolumeSet*> volumes;
-	std::vector<Volume*> x, diff;
-	VolumeShape shape;
-};
+// 	std::vector<VolumeSet*> volumes;
+// 	std::vector<Volume*> x, diff;
+// 	VolumeShape shape;
+// };
 
 
 #endif

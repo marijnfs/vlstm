@@ -7,13 +7,63 @@
 struct VolumeOperation {
 	virtual void forward(Volume &in, Volume &out){}
 
-	virtual void backward_weights(Volume &in, Volume &out_grad){}
-	virtual void backward(Volume &in, Volume &out, Volume &out_grad, Volume &in_grad){}
-	virtual VolumeShape output_shape(VolumeShape input) { return VolumeShape{0, 0, 0, 0}; }
-
+	virtual void backward_weights(VolumeSet &in, VolumeSet &out){}
+	virtual void backward(VolumeSet &in, VolumeSet &out){}
+	virtual VolumeShape output_shape(VolumeShape input) { return input; }
+	virtual void update(float lr) {}
 	virtual void forward_dry_run(Volume &in, Volume &out){}
+	virtual void init_normal(float mean, float std){}
 };
 
+struct FCVolumeOperation : public VolumeOperation {
+	FCVolumeOperation(VolumeShape shape, int in_map, int out_map);
+
+	void forward(Volume &in, Volume &out);
+	void backward_weights(VolumeSet &in, VolumeSet &out);
+	void backward(VolumeSet &in, VolumeSet &out);
+
+	void forward_dry_run(Volume &in, Volume &out);
+	void init_normal(float mean, float std);
+	VolumeShape output_shape(VolumeShape s);
+
+	ConvolutionOperation<F> op;
+	int c;
+	Tensor<F> tin, tout;
+	Tensor<F> tin_err, tout_err;
+};
+
+struct SoftmaxVolumeOperation : public VolumeOperation {
+	SoftmaxVolumeOperation(VolumeShape shape);
+
+	void forward(Volume &in, Volume &out);
+	void backward(VolumeSet &in, VolumeSet &out);
+
+	SoftmaxOperation<F> op;
+	Tensor<F> tin, tout;
+	Tensor<F> tin_err, tout_err;
+};
+
+struct TanhVolumeOperation : public VolumeOperation {
+	TanhVolumeOperation(VolumeShape shape);
+
+	void forward(Volume &in, Volume &out);
+	void backward(VolumeSet &in, VolumeSet &out);
+
+	TanhOperation<F> op;
+	Tensor<F> tin, tout;
+	Tensor<F> tin_err, tout_err;
+};
+
+struct SigmoidVolumeOperation : public VolumeOperation {
+	SigmoidVolumeOperation(VolumeShape shape);
+
+	void forward(Volume &in, Volume &out);
+	void backward(VolumeSet &in, VolumeSet &out);
+
+	SigmoidOperation<F> op;
+	Tensor<F> tin, tout;
+	Tensor<F> tin_err, tout_err;
+};
 
 struct TimeOperation {
 	virtual void forward(int t) = 0;
