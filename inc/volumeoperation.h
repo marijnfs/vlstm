@@ -4,15 +4,26 @@
 #include "operations.h"
 #include "volume.h"
 
+struct VolumeOperation {
+	virtual void forward(Volume &in, Volume &out){}
+
+	virtual void backward_weights(Volume &in, Volume &out_grad){}
+	virtual void backward(Volume &in, Volume &out, Volume &out_grad, Volume &in_grad){}
+	virtual VolumeShape output_shape(VolumeShape input) { return VolumeShape{0, 0, 0, 0}; }
+
+	virtual void forward_dry_run(Volume &in, Volume &out){}
+};
+
+
 struct TimeOperation {
 	virtual void forward(int t) = 0;
 	virtual void backward(int t) = 0;
 	virtual void forward_dry_run() = 0;
 };
 
-struct VolumeOperation : public TimeOperation
+struct TimeOperation1 : public TimeOperation
 {
-	VolumeOperation(Operation<F> &op, VolumeSet &in, VolumeSet &out, int dt, bool first);
+	TimeOperation1(Operation<F> &op, VolumeSet &in, VolumeSet &out, int dt, bool first);
 
 	void forward(int t);
 	void backward(int t);
@@ -31,15 +42,15 @@ struct VolumeOperation : public TimeOperation
 
 };
 
-struct VolumeOperation2 : public TimeOperation
+struct TimeOperation2 : public TimeOperation
 {
-	VolumeOperation2(Operation2<F> &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, bool first);
+	TimeOperation2(Operation2<F> &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, bool first);
 
 	void forward(int t);
 	void backward(int t);
 	void forward_dry_run();
 
-	VolumeShape output_shape(VolumeShape input);
+	// VolumeShape output_shape(VolumeShape input);
 
 	Operation2<F> &op;
 	int T, dt;
@@ -49,6 +60,11 @@ struct VolumeOperation2 : public TimeOperation
 	Tensor<F> in_t, in2_t, out_t;
 	Tensor<F> in_err_t, in2_err_t, out_err_t;
 };
+
+
+
+VolumeShape output_shape(VolumeShape in, Operation<F> &op);
+VolumeShape output_shape(VolumeShape in, Operation2<F> &op);
 
 
 #endif

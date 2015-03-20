@@ -80,3 +80,13 @@ void VolumeOperation2::backward(int t) {
 void VolumeOperation2::forward_dry_run() {
 	op.forward_dry_run(in_t, in2_t, out_t);
 }
+
+VolumeShape output_shape(VolumeShape in, Operation<F> &op) {
+	TensorShape out = op.output_shape(TensorShape{1, in.c, in.w, in.h});
+	return VolumeShape{in.z, out.c, out.w, out.h};
+}
+
+VolumeShape output_shape(VolumeShape in, Operation2<F> &op) {
+	TensorShape out = op.output_shape(TensorShape{1, in.c, in.w, in.h});
+	return VolumeShape{in.z, out.c, out.w, out.h};
+}

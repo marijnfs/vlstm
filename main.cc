@@ -12,7 +12,8 @@ int main() {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
 
-	int kg(3), ko(3), c(1);
+	//int kg(3), ko(3), c(1);
+	int kg(7), ko(7), c(1);
 
 	Volume tif_data = open_tiff("7nm/input.tif", true);
 	Volume tif_label = open_tiff("7nm/binary-labels.tif", false, true);

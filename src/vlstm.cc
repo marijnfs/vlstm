@@ -47,34 +47,62 @@ LSTMOperation::LSTMOperation(VolumeSet &in, VolumeSet &out, int kg, int ko, int 
 	// xo.bias.fill(1.0);
 }
 
-void LSTMOperation::add_operations() {
-	add_op("x", "i", xi);
-	add_op("h", "i", hi, true);
-	add_op("i", "fi", sig);
+//Constructor if you already have sets
+LSTMOperation::LSTMOperation(VolumeSet &in, VolumeSet &out, VolumeSetMap *reuse, int kg, int ko, int c) :
+	T(in.shape.z),
+	xi(in.shape.c, c, kg, kg), hi(c, c, kg, kg), //input gate
+	xr(in.shape.c, c, kg, kg), hr(c, c, kg, kg), //remember gate (forget gates dont make sense!)
+	xs(in.shape.c, c, kg, kg), hs(c, c, kg, kg), //cell input
+	xo(in.shape.c, c, ko, ko), ho(c, c, ko, ko), co(c, c, ko, ko), //output gate
+	in_shape(in.shape),
+	vin(0),
+	vout(0)
+{
+	add_volume("x", in);
+	add_volume("h", out);
 
-	add_op("x", "r", xr);
-	add_op("h", "r", hr, true);
-	add_op("r", "fr", sig);
+	add_operations(reuse);
 
-	add_op("x", "s", xs);
-	add_op("h", "s", hs, true);
-	add_op("s", "fs", tan);
+	vin = volumes["x"];
+	vout = volumes["h"];
 
-	add_op("fs", "fi", "c", gate);
-	add_op("c", "fr", "c", gate, true);
-	// add_op("c", "fc", tan);
-	add_op("c", "fc", sig);
-
-	add_op("x", "o", xo);
-	add_op("h", "o", ho, true);
-	//add_op("c", "o", co);
-	add_op("o", "fo", sig);
-
-	add_op("fc", "fo", "h", gate);
+	 xr.bias.fill(2.0);
+	// xi.bias.fill(1.0);
+	// xo.bias.fill(1.0);
 }
 
-void LSTMOperation::add_volume(string name, VolumeShape shape) {
-	volumes[name] = new VolumeSet(shape);
+void LSTMOperation::add_operations(VolumeSetMap *reuse) {
+	bool BACK(true), NOW(false);
+	add_op("x", "i", xi, NOW, reuse);
+	add_op("h", "i", hi, BACK, reuse);
+	add_op("i", "fi", sig, NOW, reuse);
+
+	add_op("x", "r", xr, NOW, reuse);
+	add_op("h", "r", hr, BACK);
+	add_op("r", "fr", sig, NOW, reuse);
+
+	add_op("x", "s", xs, NOW, reuse);
+	add_op("h", "s", hs, BACK, reuse);
+	add_op("s", "fs", tan, NOW, reuse);
+
+	add_op("fs", "fi", "c", gate, NOW, reuse);
+	add_op("c", "fr", "c", gate, BACK, reuse);
+	// add_op("c", "fc", tan);
+	add_op("c", "fc", sig, NOW, reuse);
+
+	add_op("x", "o", xo, NOW, reuse);
+	add_op("h", "o", ho, BACK, reuse);
+	//add_op("c", "o", co);
+	add_op("o", "fo", sig, NOW, reuse);
+
+	add_op("fc", "fo", "h", gate, NOW, reuse);
+}
+
+void LSTMOperation::add_volume(string name, VolumeShape shape, VolumeSetMap *reuse) {
+	if (reuse)
+		volumes[name] = new VolumeSet(shape, *(*reuse)[name]);
+	else
+		volumes[name] = new VolumeSet(shape);
 }
 
 void LSTMOperation::add_volume(string name, VolumeSet &set) {
@@ -83,16 +111,6 @@ void LSTMOperation::add_volume(string name, VolumeSet &set) {
 
 bool LSTMOperation::exists(string name) {
 	return volumes.count(name);
-}
-
-VolumeShape LSTMOperation::output_shape(VolumeShape in, Operation<F> &op) {
-	TensorShape out = op.output_shape(TensorShape{1, in.c, in.w, in.h});
-	return VolumeShape{in.z, out.c, out.w, out.h};
-}
-
-VolumeShape LSTMOperation::output_shape(VolumeShape in, Operation2<F> &op) {
-	TensorShape out = op.output_shape(TensorShape{1, in.c, in.w, in.h});
-	return VolumeShape{in.z, out.c, out.w, out.h};
 }
 
 void LSTMOperation::init_normal(F mean, F std) {
@@ -110,21 +128,21 @@ void LSTMOperation::update(float lr) {
 
 void LSTMOperation::clear() {
 	for (auto& v : volumes) {
-		// if (v.first != "x")
-		// 	v.second->x.zero();
-		v.second->x.zero();
+		 if (v.first != "x" && v.first != "h")
+		 	v.second->x.zero();
+		//v.second->x.zero();
 		v.second->diff.zero();
 	}
 	for (auto& p : parameters)
 		p->zero_grad();
 }
 
-void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay) {
+void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse) {
 	VolumeSet &in(*volumes[ins]);
 
 	bool first(false);
 	if (!exists(outs)) {
-		add_volume(outs, output_shape(in.shape, op));
+		add_volume(outs, output_shape(in.shape, op), reuse);
 		first = true;
 	}
 	VolumeSet &out(*volumes[outs]);
@@ -140,13 +158,13 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 	}
 }
 
-void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay) {
+void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay, VolumeSetMap *reuse) {
 	VolumeSet &in(*volumes[ins]);
 	VolumeSet &in2(*volumes[in2s]);
 
 	bool first(false);
 	if (!exists(outs)) {
-		add_volume(outs, output_shape(in.shape, op));
+		add_volume(outs, output_shape(in.shape, op), reuse);
 		first = true;
 	}
 	VolumeSet &out(*volumes[outs]);
@@ -155,19 +173,24 @@ void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &
 	operations.push_back(new VolumeOperation2(op, in, in2, out, dt, first));
 }
 
+
 void LSTMOperation::forward() {
 //	int T(in_shape.z);
-
-	for (int i(0); i < T; ++i)
-		for (auto &op : operations)
-			op->forward(i);
+	clear();
+	for (int t(0); t < T; ++t)
+		for (auto &op : operations) {
+			op->forward(t);
+		}
 }
 
 void LSTMOperation::backward() {
 	cout << "back" << endl;
-	for (int i(T - 1); i > 0; --i)
-		for (int n(operations.size() - 1); n >= 0; --n)
-			operations[n]->backward(i);
+	forward();
+
+	for (int t(T - 1); t > 0; --t)
+		for (int n(operations.size() - 1); n >= 0; --n) {
+			operations[n]->backward(t);
+		}
 	cout << "scaling" << endl;
 	for (auto &p : parameters)
 		p->scale_grad(1.0 / in_shape.size());
@@ -207,6 +230,7 @@ void VLSTM::clear() {
 
 void VLSTM::forward() {
 	divide(x.x, x6.x);
+
 	/*
 	x6.x[0]->zero();
 	x6.x[1]->zero();
@@ -230,12 +254,13 @@ void VLSTM::forward() {
 	// for (size_t n(4); n < 5; ++n)
 	// 	operations[n]->forward();
 
-	for (auto &op : operations)
-			op->forward();
+
+	for (auto &op : operations) {
+		op->forward();
+	}
 	for (auto &x : y6.x)
 		cout << x->norm() << endl;
 	combine(y6.x, y.x);
-
 }
 
 void VLSTM::backward() {

@@ -9,7 +9,7 @@
 inline Volume open_tiff(std::string name, bool do_normalize = false, bool neg = false)
 {
     TIFF* tif = TIFFOpen(name.c_str(), "r");
-    int dircount = 0;
+    int z = 0;
    	uint32 w(0), h(0);
 
    	std::vector<std::vector<float> > v_data;
@@ -24,7 +24,7 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool neg = 
 
         std::vector<float> fdata;
         fdata.reserve(npixels);
-        dircount++;
+        z++;
         if (TIFFReadRGBAImage(tif, w, h, raster, 0)) {
 			//for (auto d : data)
 			//	std::cout << int(d) << " ";
@@ -42,7 +42,7 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool neg = 
         }
         v_data.push_back(fdata);
 
-        if (dircount == 10)
+        if (z == 10)
         	break;
 
     } while (TIFFReadDirectory(tif));
@@ -51,10 +51,10 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool neg = 
 		for (auto &v : v_data)
 			normalize(&v);
 	}
-    Volume v(VolumeShape{dircount, 1, w, h});
+    Volume v(VolumeShape{z, 1, w, h});
     for (size_t i(0); i < v_data.size(); ++i)
     	handle_error( cudaMemcpy(v.slice(i), &v_data[i][0], v_data[i].size() * sizeof(F), cudaMemcpyHostToDevice));
-    std::cout << dircount << std::endl;
+    std::cout << z << std::endl;
     TIFFClose(tif);
     return v;
 }

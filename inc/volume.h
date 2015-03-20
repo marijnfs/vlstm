@@ -43,10 +43,8 @@ struct VolumeSet {
 	VolumeSet(VolumeShape shape, VolumeSet &reuse_buffer);
 	void zero();
 
-	Volume x, diff;
+	Volume x, diff;	// x: activation
 	VolumeShape shape;
-
-
 };
 
 struct Volume6DSet {
