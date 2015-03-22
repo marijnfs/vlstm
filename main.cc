@@ -1,6 +1,6 @@
 #include <iostream>
 #include <cuda.h>
-
+#include <sstream>
 #include "volume.h"
 #include "volumenetwork.h"
 #include "vlstm.h"
@@ -35,10 +35,16 @@ int main() {
 	// out_data.init_normal(0, .5);
 
 	VolumeNetwork net(shape);
-	net.add_vlstm(3, 3, 10);
-	net.add_fc(3);
+	// net.add_vlstm(3, 3, 10);
+	// net.add_fc(3);
+	// net.add_tanh();
+
+	net.add_fc(5);
 	net.add_tanh();
-	net.add_vlstm(3, 3, 3);
+	net.add_vlstm(3, 5, 10);
+	net.add_fc(10);
+	net.add_tanh();
+	net.add_vlstm(3, 5, 10);
 	net.add_fc(2);
 	//net.add_sigmoid();
 	net.add_softmax();
@@ -47,18 +53,21 @@ int main() {
 	// net.add_fc(1);
 
 	net.finish();
-	net.init_normal(0, .3);
+	net.init_normal(0, .5);
 
 	net.set_input(tiff_data);
-	// net.volumes[0]->x.draw_slice("lala.png", 4);
+	net.volumes[0]->x.draw_slice("in_8.png", 8);
 
+	int epoch(0);
 	while (true) {
-
 		net.forward();
-		net.output().draw_slice("lala.png", 4);
+		ostringstream oss;
+		oss << "lala_" << epoch << ".png";
+		net.output().draw_slice(oss.str(), 8);
 		cout << "loss " << net.calculate_loss(tiff_label) << endl;
 		net.backward();
-		net.update(10.);
+		net.update(.1);
+		++epoch;
 	}
 
 	// VLSTM vlstm(shape, kg, ko, c);

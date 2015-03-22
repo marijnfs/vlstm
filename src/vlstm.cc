@@ -21,31 +21,34 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 
 	vin = volumes["x"];
 	vout = volumes["h"];
+
+	//xr.bias.init_normal(1.0, 0.0);
+	//xi.bias.init_normal(1.0, 0.0);
 }
 
 
 void LSTMOperation::add_operations(VolumeSetMap *reuse) {
-	bool BACK(true), NOW(false);
+	bool DELAY(true), NOW(false);
 	add_op("x", "i", xi, NOW, reuse);
-	add_op("h", "i", hi, BACK, reuse);
+	add_op("h", "i", hi, DELAY, reuse);
 	add_op("i", "fi", sig, NOW, reuse);
 
 	add_op("x", "r", xr, NOW, reuse);
-	add_op("h", "r", hr, BACK);
+	add_op("h", "r", hr, DELAY, reuse);
 	add_op("r", "fr", sig, NOW, reuse);
 
 	add_op("x", "s", xs, NOW, reuse);
-	add_op("h", "s", hs, BACK, reuse);
+	add_op("h", "s", hs, DELAY, reuse);
 	add_op("s", "fs", tan, NOW, reuse);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "fr", "c", gate, BACK, reuse);
-	// add_op("c", "fc", tan);
+	add_op("c", "fr", "c", gate, DELAY, reuse);
+	// add_op("c", "fc", tan, reuse);
 	add_op("c", "fc", sig, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
-	add_op("h", "o", ho, BACK, reuse);
-	//add_op("c", "o", co);
+	add_op("h", "o", ho, DELAY, reuse);
+	//add_op("c", "o", co, reuse);
 	add_op("o", "fo", sig, NOW, reuse);
 
 	add_op("fc", "fo", "h", gate, NOW, reuse);
@@ -144,7 +147,8 @@ void LSTMOperation::backward() {
 		}
 	// cout << "scaling" << endl;
 	for (auto &p : parameters)
-		p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
+		//p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
+		p->scale_grad(1.0 / sqrt(in_shape.z * in_shape.w * in_shape.h));
 	// cout << "done" << endl;
 }
 
@@ -195,6 +199,14 @@ void VLSTMOperation::forward(Volume &in, Volume &out) {
 		divide(in, operations[i]->input().x, i);
 		operations[i]->forward();
 		combine(operations[i]->output().x, out, i);
+		if (i == 0) { 
+			operations[0]->volumes["c"]->x.draw_slice("c1.png", 1);
+			operations[0]->volumes["c"]->x.draw_slice("c8.png", 8);		
+			operations[0]->volumes["i"]->x.draw_slice("i1.png", 1);
+			operations[0]->volumes["i"]->x.draw_slice("i8.png", 8);	
+			operations[0]->volumes["o"]->x.draw_slice("o1.png", 1);
+			operations[0]->volumes["o"]->x.draw_slice("o8.png", 8);
+		}
 	}
 }
 
