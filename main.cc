@@ -64,9 +64,16 @@ int main() {
 		ostringstream oss;
 		oss << "lala_" << epoch << ".png";
 		net.output().draw_slice(oss.str(), 8);
+		cout << net.param.to_vector() << endl;
 		cout << "loss " << net.calculate_loss(tiff_label) << endl;
+
 		net.backward();
-		net.update(.1);
+		// cout << net.grad.to_vector() << endl;
+		//net.update(.1);
+		net.grad *= .00001;
+		net.param += net.grad;
+
+
 		++epoch;
 	}
 

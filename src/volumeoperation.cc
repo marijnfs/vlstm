@@ -3,13 +3,14 @@
 
 using namespace std;
 
-FCVolumeOperation::FCVolumeOperation(VolumeShape shape, int in_map, int out_map) :
+FCVolumeOperation::FCVolumeOperation(VolumeShape shape_, int in_map, int out_map) :
 	op(in_map, out_map, 1, 1),
 	c(out_map),
-	tin(shape.z, in_map, shape.w, shape.h),
-	tout(shape.z, out_map, shape.w, shape.h),
-	tin_err(shape.z, in_map, shape.w, shape.h),
-	tout_err(shape.z, out_map, shape.w, shape.h)
+	shape(shape_),
+	tin(shape_.z, in_map, shape_.w, shape_.h),
+	tout(shape_.z, out_map, shape_.w, shape_.h),
+	tin_err(shape_.z, in_map, shape_.w, shape_.h),
+	tout_err(shape_.z, out_map, shape_.w, shape_.h)
 {}
 
 void FCVolumeOperation::forward(Volume &in, Volume &out)  {
@@ -23,6 +24,7 @@ void FCVolumeOperation::backward_weights(VolumeSet &in, VolumeSet &out){
 	tout_err.data = out.diff.data;
 
 	op.backward_weights(tin, tout_err);
+	op.scale_grad(1.0 / (shape.z * shape.w * shape.h));
 }
 
 void FCVolumeOperation::backward(VolumeSet &in, VolumeSet &out) {
@@ -40,8 +42,16 @@ void FCVolumeOperation::forward_dry_run(Volume &in, Volume &out) {
 	op.forward_dry_run(tin, tout);
 }
 
+void FCVolumeOperation::update(float lr) {
+	op.update(lr);
+}
+
 void FCVolumeOperation::init_normal(float mean, float std) {
 	op.init_normal(mean, std);
+}
+
+void FCVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
+	op.register_params(params, grads);
 }
 
 VolumeShape FCVolumeOperation::output_shape(VolumeShape s) {

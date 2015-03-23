@@ -74,6 +74,11 @@ void LSTMOperation::init_normal(F mean, F std) {
 		p->init_normal(mean, std);
 }
 
+void LSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
+	for (auto &p : parameters)
+		p->register_params(params, grads);
+}
+
 void LSTMOperation::update(float lr) {
 	for (auto &p : parameters) {
 		p->update(lr);
@@ -199,11 +204,11 @@ void VLSTMOperation::forward(Volume &in, Volume &out) {
 		divide(in, operations[i]->input().x, i);
 		operations[i]->forward();
 		combine(operations[i]->output().x, out, i);
-		if (i == 0) { 
+		if (i == 0) {
 			operations[0]->volumes["c"]->x.draw_slice("c1.png", 1);
-			operations[0]->volumes["c"]->x.draw_slice("c8.png", 8);		
+			operations[0]->volumes["c"]->x.draw_slice("c8.png", 8);
 			operations[0]->volumes["i"]->x.draw_slice("i1.png", 1);
-			operations[0]->volumes["i"]->x.draw_slice("i8.png", 8);	
+			operations[0]->volumes["i"]->x.draw_slice("i8.png", 8);
 			operations[0]->volumes["o"]->x.draw_slice("o1.png", 1);
 			operations[0]->volumes["o"]->x.draw_slice("o8.png", 8);
 		}
@@ -236,6 +241,11 @@ VolumeShape VLSTMOperation::output_shape(VolumeShape s) {
 void VLSTMOperation::init_normal(F mean, F std) {
 	for (auto &o : operations)
 		o->init_normal(mean, std);
+}
+
+void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
+	for (auto &o : operations)
+		o->register_params(params, grads);
 }
 
 void VLSTMOperation::update(float lr) {

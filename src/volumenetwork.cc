@@ -4,10 +4,9 @@
 
 using namespace std;
 
-VolumeNetwork::VolumeNetwork(VolumeShape shape) {
+VolumeNetwork::VolumeNetwork(VolumeShape shape) : n_params(0) {
 	shapes.push_back(shape);
 	volumes.push_back(new VolumeSet(shape));
-	forward_dry_run();
 }
 
 void VolumeNetwork::forward() {
@@ -32,6 +31,41 @@ void VolumeNetwork::forward_dry_run() {
 
 void VolumeNetwork::finish() {
 	forward_dry_run();
+	register_params();
+	align_params();
+	//init_normal(0, 0);
+}
+
+void VolumeNetwork::register_params() {
+	for (auto &o : operations)
+		o->register_params(params, grads);
+}
+
+void VolumeNetwork::align_params() {
+	cout << n_params << endl;
+
+	for (auto &p : params)
+		n_params += p.n;
+
+	cout << n_params << endl;
+	//throw "";
+	param.resize(n_params);
+	grad.resize(n_params);
+
+	float *ptr = param.data;
+	for (auto &p : params) {
+		cudaFree(*(p.ptr));
+		*(p.ptr) = ptr;
+		ptr += p.n;
+	}
+
+	ptr = grad.data;
+	for (auto &g : grads) {
+		cudaFree(*(g.ptr));
+		*(g.ptr) = ptr;
+		ptr += g.n;
+	}
+
 }
 
 void VolumeNetwork::update(float lr) {

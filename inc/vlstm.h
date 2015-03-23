@@ -29,6 +29,7 @@ struct LSTMOperation {
 	void add_operations(VolumeSetMap *reuse = 0);
 	void clear();
 	void init_normal(F mean, F std);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
 	void update(float lr);
 
 	VolumeSet &input() { return *vin; }
@@ -60,6 +61,7 @@ struct VLSTMOperation : public VolumeOperation {
 	void backward(VolumeSet &in, VolumeSet &out);
 
 	void forward_dry_run(Volume &in, Volume &out);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
 	VolumeShape output_shape(VolumeShape s);
 
 	void clear();

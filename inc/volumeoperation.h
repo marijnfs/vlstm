@@ -11,8 +11,9 @@ struct VolumeOperation {
 	virtual void backward(VolumeSet &in, VolumeSet &out){}
 	virtual VolumeShape output_shape(VolumeShape input) { return input; }
 	virtual void update(float lr) {}
-	virtual void forward_dry_run(Volume &in, Volume &out){}
-	virtual void init_normal(float mean, float std){}
+	virtual void forward_dry_run(Volume &in, Volume &out) {}
+	virtual void init_normal(float mean, float std) {}
+	virtual void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {}
 };
 
 struct FCVolumeOperation : public VolumeOperation {
@@ -21,12 +22,15 @@ struct FCVolumeOperation : public VolumeOperation {
 	void forward(Volume &in, Volume &out);
 	void backward_weights(VolumeSet &in, VolumeSet &out);
 	void backward(VolumeSet &in, VolumeSet &out);
-
 	void forward_dry_run(Volume &in, Volume &out);
+	void update(float lr);
+
 	void init_normal(float mean, float std);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
 	VolumeShape output_shape(VolumeShape s);
 
 	ConvolutionOperation<F> op;
+	VolumeShape shape;
 	int c;
 	Tensor<F> tin, tout;
 	Tensor<F> tin_err, tout_err;

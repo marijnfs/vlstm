@@ -3,6 +3,7 @@
 
 #include "volume.h"
 #include "volumeoperation.h"
+#include "cudavec.h"
 
 struct VolumeNetwork {
 	VolumeNetwork(VolumeShape shape);
@@ -13,11 +14,14 @@ struct VolumeNetwork {
 
 	void finish();
 
+	void register_params();
+
 	void set_input(Volume &in);
 	float calculate_loss(Volume &target);
 	void update(float lr);
 	void clear();
 	void init_normal(float mean, float std);
+	void align_params();
 
 	Volume &output();
 
@@ -27,7 +31,12 @@ struct VolumeNetwork {
 	void add_tanh();
 	void add_sigmoid();
 
-	std::vector<Parametrised<F>*> params;
+	std::vector<CudaPtr<F>> params;
+	std::vector<CudaPtr<F>> grads;
+
+	CudaVec param, grad;
+	int n_params;
+
 
 	std::vector<VolumeOperation*> operations;
 	std::vector<VolumeSet*> volumes;
