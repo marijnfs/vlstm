@@ -31,10 +31,14 @@ struct VolumeNetwork {
 	void add_tanh();
 	void add_sigmoid();
 
+	void save(std::string path);
+	void load(std::string path);
+
 	std::vector<CudaPtr<F>> params;
 	std::vector<CudaPtr<F>> grads;
 
 	CudaVec param, grad;
+	CudaVec a,b,c,rmse;
 	int n_params;
 
 

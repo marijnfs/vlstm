@@ -1,17 +1,23 @@
 #include <iostream>
 #include <cuda.h>
 #include <sstream>
+
 #include "volume.h"
 #include "volumenetwork.h"
 #include "vlstm.h"
 #include "handler.h"
 #include "tiff.h"
+#include "log.h"
 
 using namespace std;
 
 int main() {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
+
+	ostringstream oss;
+	oss << "result" << date_string() << ".log";
+	Log logger(oss.str());
 
 	//int kg(3), ko(3), c(1);
 	int kg(7), ko(7), c(1);
@@ -58,23 +64,47 @@ int main() {
 	net.set_input(tiff_data);
 	net.volumes[0]->x.draw_slice("in_8.png", 8);
 
+	net.load("network.net");
+
 	int epoch(0);
 	while (true) {
 		net.forward();
 		ostringstream oss;
 		oss << "lala_" << epoch << ".png";
 		net.output().draw_slice(oss.str(), 8);
-		cout << net.param.to_vector() << endl;
-		cout << "loss " << net.calculate_loss(tiff_label) << endl;
+		//cout << net.param.to_vector() << endl;
+		logger << "epoch: " << epoch << ": loss " << net.calculate_loss(tiff_label) << "\n";
 
 		net.backward();
 		// cout << net.grad.to_vector() << endl;
 		//net.update(.1);
-		net.grad *= .00001;
-		net.param += net.grad;
 
+		//SGD
+		// net.grad *= .00001;
+		// net.param += net.grad;
+
+		//RMS PROP
+		float decay = 0.9;
+		float eps = .00001;
+		float lr = 0.0003;
+
+		net.a = net.grad;
+		net.a *= net.a;
+		net.rmse *= decay;
+		net.a *= (1.0 - decay);
+		net.rmse += net.a;
+
+		net.b = net.rmse;
+		net.b.sqrt();
+		net.b += eps;
+
+		net.c = net.grad;
+		net.c /= net.b;
+		net.c *= lr;
+		net.param += net.c;
 
 		++epoch;
+		net.save("network.net");
 	}
 
 	// VLSTM vlstm(shape, kg, ko, c);

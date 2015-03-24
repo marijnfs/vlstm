@@ -22,6 +22,7 @@ struct CudaVec {
 		if (n != other.n)
 			resize(other.n);
 		handle_error( cudaMemcpy(data, other.data, n * sizeof(float), cudaMemcpyDeviceToDevice));
+		return *this;
 	}
 
 	void zero() {

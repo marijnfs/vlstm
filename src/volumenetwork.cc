@@ -34,6 +34,11 @@ void VolumeNetwork::finish() {
 	register_params();
 	align_params();
 	//init_normal(0, 0);
+	a.resize(param.n);
+	b.resize(param.n);
+	c.resize(param.n);
+	rmse.resize(param.n);
+	rmse += 1.0;
 }
 
 void VolumeNetwork::register_params() {
@@ -144,4 +149,16 @@ void VolumeNetwork::add_sigmoid() {
 	operations.push_back(sig);
 	shapes.push_back(shape);
 	volumes.push_back(new VolumeSet(shape));
+}
+
+void VolumeNetwork::save(std::string path) {
+	ofstream of(path, ios::binary);
+	vector<float> data = param.to_vector();
+	byte_write_vec(of, data);
+}
+
+void VolumeNetwork::load(std::string path) {
+	ifstream in(path, ios::binary);
+	vector<float> data = byte_read_vec<float>(in);
+	param.from_vector(data);
 }
