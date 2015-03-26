@@ -8,6 +8,13 @@ __global__ void sqrt_kernel(float *v, int n) {
 	v[x] = sqrt(v[x]);
 }
 
+__global__ void abs_kernel(float *v, int n) {
+	int x(threadIdx.x + blockDim.x * blockIdx.x);
+	if (x >= n) return;
+
+	v[x] = abs(v[x]);
+}
+
 __global__ void times_kernel(float *v, float *other, int n) {
 	int x(threadIdx.x + blockDim.x * blockIdx.x);
 	if (x >= n) return;
@@ -44,6 +51,19 @@ CudaVec &CudaVec::sqrt() {
 	dim3 dimGrid( (n + BLOCKSIZE - 1) / BLOCKSIZE );
 
 	sqrt_kernel<<<dimGrid, dimBlock>>>(data, n);
+	handle_error( cudaGetLastError() );
+	handle_error( cudaDeviceSynchronize());
+	return *this;
+}
+
+CudaVec &CudaVec::abs() {
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+
+	dim3 dimBlock( BLOCKSIZE );
+	dim3 dimGrid( (n + BLOCKSIZE - 1) / BLOCKSIZE );
+
+	abs_kernel<<<dimGrid, dimBlock>>>(data, n);
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 	return *this;

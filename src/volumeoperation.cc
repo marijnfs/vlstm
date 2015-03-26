@@ -7,38 +7,38 @@ FCVolumeOperation::FCVolumeOperation(VolumeShape shape_, int in_map, int out_map
 	op(in_map, out_map, 1, 1),
 	c(out_map),
 	shape(shape_),
-	tin(shape_.z, in_map, shape_.w, shape_.h),
-	tout(shape_.z, out_map, shape_.w, shape_.h),
-	tin_err(shape_.z, in_map, shape_.w, shape_.h),
-	tout_err(shape_.z, out_map, shape_.w, shape_.h)
+	tin(shape_.z, in_map, shape_.w, shape_.h, 0),
+	tout(shape_.z, out_map, shape_.w, shape_.h, 0),
+	tin_err(shape_.z, in_map, shape_.w, shape_.h, 0),
+	tout_err(shape_.z, out_map, shape_.w, shape_.h, 0)
 {}
 
 void FCVolumeOperation::forward(Volume &in, Volume &out)  {
-	tin.data = in.data;
-	tout.data = out.data;
+	tin.data = in.data();
+	tout.data = out.data();
 	op.forward(tin, tout);
 }
 
 void FCVolumeOperation::backward_weights(VolumeSet &in, VolumeSet &out){
-	tin.data = in.x.data;
-	tout_err.data = out.diff.data;
+	tin.data = in.x.data();
+	tout_err.data = out.diff.data();
 
 	op.backward_weights(tin, tout_err);
 	op.scale_grad(1.0 / (shape.z * shape.w * shape.h));
 }
 
 void FCVolumeOperation::backward(VolumeSet &in, VolumeSet &out) {
-	tin.data = in.x.data;
-	tout.data = out.x.data;
-	tin_err.data = in.diff.data;
-	tout_err.data = out.diff.data;
+	tin.data = in.x.data();
+	tout.data = out.x.data();
+	tin_err.data = in.diff.data();
+	tout_err.data = out.diff.data();
 
 	op.backward(tin, tout, tout_err, tin_err);
 }
 
 void FCVolumeOperation::forward_dry_run(Volume &in, Volume &out) {
-	tin.data = in.data;
-	tout.data = out.data;
+	tin.data = in.data();
+	tout.data = out.data();
 	op.forward_dry_run(tin, tout);
 }
 
@@ -60,46 +60,46 @@ VolumeShape FCVolumeOperation::output_shape(VolumeShape s) {
 
 
 SoftmaxVolumeOperation::SoftmaxVolumeOperation(VolumeShape shape) :
-	tin(shape.z, shape.c, shape.w, shape.h),
-	tout(shape.z, shape.c, shape.w, shape.h),
-	tin_err(shape.z, shape.c, shape.w, shape.h),
-	tout_err(shape.z, shape.c, shape.w, shape.h)
+	tin(shape.z, shape.c, shape.w, shape.h, 0),
+	tout(shape.z, shape.c, shape.w, shape.h, 0),
+	tin_err(shape.z, shape.c, shape.w, shape.h, 0),
+	tout_err(shape.z, shape.c, shape.w, shape.h, 0)
 {}
 
 void SoftmaxVolumeOperation::forward(Volume &in, Volume &out){
-	tin.data = in.data;
-	tout.data = out.data;
+	tin.data = in.data();
+	tout.data = out.data();
 	op.forward(tin, tout);
 }
 
 void SoftmaxVolumeOperation::backward(VolumeSet &in, VolumeSet &out){
-	tin.data = in.x.data;
-	tout.data = out.x.data;
-	tin_err.data = in.diff.data;
-	tout_err.data = out.diff.data;
+	tin.data = in.x.data();
+	tout.data = out.x.data();
+	tin_err.data = in.diff.data();
+	tout_err.data = out.diff.data();
 
 	op.backward(tin, tout, tout_err, tin_err);
 }
 
 //Tanh Operation
 TanhVolumeOperation::TanhVolumeOperation(VolumeShape shape) :
-	tin(shape.z, shape.c, shape.w, shape.h),
-	tout(shape.z, shape.c, shape.w, shape.h),
-	tin_err(shape.z, shape.c, shape.w, shape.h),
-	tout_err(shape.z, shape.c, shape.w, shape.h)
+	tin(shape.z, shape.c, shape.w, shape.h, 0),
+	tout(shape.z, shape.c, shape.w, shape.h, 0),
+	tin_err(shape.z, shape.c, shape.w, shape.h, 0),
+	tout_err(shape.z, shape.c, shape.w, shape.h, 0)
 {}
 
 void TanhVolumeOperation::forward(Volume &in, Volume &out){
-	tin.data = in.data;
-	tout.data = out.data;
+	tin.data = in.data();
+	tout.data = out.data();
 	op.forward(tin, tout);
 }
 
 void TanhVolumeOperation::backward(VolumeSet &in, VolumeSet &out){
-	tin.data = in.x.data;
-	tout.data = out.x.data;
-	tin_err.data = in.diff.data;
-	tout_err.data = out.diff.data;
+	tin.data = in.x.data();
+	tout.data = out.x.data();
+	tin_err.data = in.diff.data();
+	tout_err.data = out.diff.data();
 
 	op.backward(tin, tout, tout_err, tin_err);
 }
@@ -107,23 +107,23 @@ void TanhVolumeOperation::backward(VolumeSet &in, VolumeSet &out){
 
 //Sigmoid Operation
 SigmoidVolumeOperation::SigmoidVolumeOperation(VolumeShape shape) :
-	tin(shape.z, shape.c, shape.w, shape.h),
-	tout(shape.z, shape.c, shape.w, shape.h),
-	tin_err(shape.z, shape.c, shape.w, shape.h),
-	tout_err(shape.z, shape.c, shape.w, shape.h)
+	tin(shape.z, shape.c, shape.w, shape.h, 0),
+	tout(shape.z, shape.c, shape.w, shape.h, 0),
+	tin_err(shape.z, shape.c, shape.w, shape.h, 0),
+	tout_err(shape.z, shape.c, shape.w, shape.h, 0)
 {}
 
 void SigmoidVolumeOperation::forward(Volume &in, Volume &out){
-	tin.data = in.data;
-	tout.data = out.data;
+	tin.data = in.data();
+	tout.data = out.data();
 	op.forward(tin, tout);
 }
 
 void SigmoidVolumeOperation::backward(VolumeSet &in, VolumeSet &out){
-	tin.data = in.x.data;
-	tout.data = out.x.data;
-	tin_err.data = in.diff.data;
-	tout_err.data = out.diff.data;
+	tin.data = in.x.data();
+	tout.data = out.x.data();
+	tin_err.data = in.diff.data();
+	tout_err.data = out.diff.data();
 
 	op.backward(tin, tout, tout_err, tin_err);
 }
@@ -160,7 +160,7 @@ void TimeOperation1::backward(int t) {
 }
 
 void TimeOperation1::forward_dry_run() {
-	cout << in_t.shape() << " " << out_t.shape() << endl;
+	// cout << in_t.shape() << " " << out_t.shape() << endl;
 	op.forward_dry_run(in_t, out_t);
 }
 

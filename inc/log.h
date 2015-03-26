@@ -7,6 +7,7 @@
 #include <iostream>
 
 std::string date_string();
+bool exists(std::string fileName);
 
 struct Log {
 	Log(std::string filename);

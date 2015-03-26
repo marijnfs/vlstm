@@ -32,41 +32,47 @@ void VolumeNetwork::forward_dry_run() {
 void VolumeNetwork::finish() {
 	forward_dry_run();
 	register_params();
+	param.resize(n_params);
+	grad.resize(n_params);
+
 	align_params();
 	//init_normal(0, 0);
 	a.resize(param.n);
 	b.resize(param.n);
 	c.resize(param.n);
+	d.resize(param.n);
+	e.resize(param.n);
 	rmse.resize(param.n);
-	rmse += 1.0;
+	rmse += .01;
 }
 
 void VolumeNetwork::register_params() {
 	for (auto &o : operations)
 		o->register_params(params, grads);
+
+ 	n_params = 0;
+	for (auto &p : params)
+		n_params += p.n;
 }
 
 void VolumeNetwork::align_params() {
-	cout << n_params << endl;
+
+	cout << "n params: " << n_params << endl;
+	//throw "";
 
 	for (auto &p : params)
-		n_params += p.n;
-
-	cout << n_params << endl;
-	//throw "";
-	param.resize(n_params);
-	grad.resize(n_params);
+		cudaFree(*(p.ptr));
+	for (auto &g : grads)
+		cudaFree(*(g.ptr));
 
 	float *ptr = param.data;
 	for (auto &p : params) {
-		cudaFree(*(p.ptr));
 		*(p.ptr) = ptr;
 		ptr += p.n;
 	}
 
 	ptr = grad.data;
 	for (auto &g : grads) {
-		cudaFree(*(g.ptr));
 		*(g.ptr) = ptr;
 		ptr += g.n;
 	}
@@ -109,9 +115,10 @@ float VolumeNetwork::calculate_loss(Volume &target) {
 }
 
 void VolumeNetwork::add_vlstm(int kg, int ko, int c) {
+	cout << "adding vlstm" << endl;
 	//cout << "adding: " << last(shapes) << " " << shape << endl;
 
-	auto vlstm = new VLSTMOperation(last(shapes), kg, ko, c);
+	auto vlstm = new VLSTMOperation(last(shapes), kg, ko, c, vsm);
 	auto shape = vlstm->output_shape(last(shapes));
 
 	operations.push_back(vlstm);
@@ -120,6 +127,7 @@ void VolumeNetwork::add_vlstm(int kg, int ko, int c) {
 }
 
 void VolumeNetwork::add_fc(int c) {
+	cout << "adding fc" << endl;
 	auto fc = new FCVolumeOperation(last(shapes), last(shapes).c, c);
 	auto shape = fc->output_shape(last(shapes));
 	operations.push_back(fc);
@@ -128,6 +136,7 @@ void VolumeNetwork::add_fc(int c) {
 }
 
 void VolumeNetwork::add_softmax() {
+	cout << "adding softmax" << endl;
 	auto softmax = new SoftmaxVolumeOperation(last(shapes));
 	auto shape = softmax->output_shape(last(shapes));
 	operations.push_back(softmax);
@@ -136,6 +145,7 @@ void VolumeNetwork::add_softmax() {
 }
 
 void VolumeNetwork::add_tanh() {
+	cout << "adding tanh" << endl;
 	auto tan = new TanhVolumeOperation(last(shapes));
 	auto shape = tan->output_shape(last(shapes));
 	operations.push_back(tan);
@@ -144,6 +154,7 @@ void VolumeNetwork::add_tanh() {
 }
 
 void VolumeNetwork::add_sigmoid() {
+	cout << "adding sigmoid" << endl;
 	auto sig = new SigmoidVolumeOperation(last(shapes));
 	auto shape = sig->output_shape(last(shapes));
 	operations.push_back(sig);

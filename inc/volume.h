@@ -2,8 +2,11 @@
 #define __VOLUME_H__
 
 #include <vector>
+#include <map>
+#include <string>
 #include <cassert>
 #include "tensor.h"
+#include "cudavec.h"
 
 //initially just float
 typedef float F;
@@ -30,9 +33,10 @@ struct Volume {
   	void from_volume(Volume &other);
   	std::vector<F> to_vector();
 	void draw_slice(std::string filename, int slice);
+	float *data();
 
 	VolumeShape shape;
-	F *data;
+	CudaVec *buf;
 	int slice_size;
 };
 
@@ -46,6 +50,8 @@ struct VolumeSet {
 	Volume x, diff;	// x: activation
 	VolumeShape shape;
 };
+
+typedef std::map<std::string, VolumeSet*> VolumeSetMap;
 
 // struct Volume6DSet {
 // 	// order: [x,y,z], [y,x,z], [x, z, y]

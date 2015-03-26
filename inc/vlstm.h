@@ -9,9 +9,9 @@
 #include "operations.h"
 #include "volumeoperation.h"
 
-struct LSTMOperation {
-	typedef std::map<std::string, VolumeSet*> VolumeSetMap;
 
+
+struct LSTMOperation {
 	LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap *reuse = 0);
 
 	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0);
@@ -55,7 +55,7 @@ struct LSTMOperation {
 };
 
 struct VLSTMOperation : public VolumeOperation {
-	VLSTMOperation(VolumeShape shape, int kg, int ko, int c);
+	VLSTMOperation(VolumeShape shape, int kg, int ko, int c, VolumeSetMap &vsm);
 
 	void forward(Volume &in, Volume &out);
 	void backward(VolumeSet &in, VolumeSet &out);

@@ -11,6 +11,11 @@ void Log::print(T1 a, T2 b, T3 c)
 	file << a << b << c;
 }
 
+bool exists(std::string fileName)
+{
+    std::ifstream infile(fileName);
+    return infile.good();
+}
 
 
 string date_string()

@@ -55,8 +55,11 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 }
 
 void LSTMOperation::add_volume(string name, VolumeShape shape, VolumeSetMap *reuse) {
-	if (reuse)
+	if (reuse) {
+		if (!(*reuse).count(name))
+			(*reuse)[name] = new VolumeSet(shape);
 		volumes[name] = new VolumeSet(shape, *(*reuse)[name]);
+	}
 	else
 		volumes[name] = new VolumeSet(shape);
 }
@@ -113,9 +116,9 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 	operations.push_back(new TimeOperation1(op, in, out, dt, first));
 	try {
 		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
-		cout << "a parameter" << endl;
+		// cout << "a parameter" << endl;
 	} catch (const std::bad_cast& e) {
-		cout << "not a parameter" << endl;
+		// cout << "not a parameter" << endl;
 	}
 }
 
@@ -164,19 +167,19 @@ void LSTMOperation::forward_dry_run() {
 
 
 //Vlstm
-VLSTMOperation::VLSTMOperation(VolumeShape s, int kg, int ko, int c_) : c(c_)
+VLSTMOperation::VLSTMOperation(VolumeShape s, int kg, int ko, int c_, VolumeSetMap &vsm) : c(c_)
 {
 	// for (size_t i(0); i < 6; ++i)
 		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
 
-	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c));
-	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &(operations[0]->volumes)));
+	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm));
 
-	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &(operations[0]->volumes)));
-	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &(operations[0]->volumes)));
+	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm));
 
-	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &(operations[0]->volumes)));
-	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &(operations[0]->volumes)));
+	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
 
 	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
 	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));

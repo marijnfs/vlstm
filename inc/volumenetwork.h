@@ -38,13 +38,15 @@ struct VolumeNetwork {
 	std::vector<CudaPtr<F>> grads;
 
 	CudaVec param, grad;
-	CudaVec a,b,c,rmse;
+	CudaVec a, b, c, d, e, rmse;
 	int n_params;
 
 
 	std::vector<VolumeOperation*> operations;
 	std::vector<VolumeSet*> volumes;
 	std::vector<VolumeShape> shapes;
+
+	VolumeSetMap vsm;
 };
 
 #endif

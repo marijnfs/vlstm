@@ -16,20 +16,28 @@ int main() {
 	Handler::set_device(0);
 
 	ostringstream oss;
-	oss << "result" << date_string() << ".log";
+	oss << "log/result-" << date_string() << ".log";
 	Log logger(oss.str());
+
+	ostringstream oss1;
+	oss1 << "log/network-" << date_string() << ".net";
+	string netname = oss1.str();
 
 	//int kg(3), ko(3), c(1);
 	int kg(7), ko(7), c(1);
 
-	Volume tiff_data = open_tiff("7nm/input.tif", true);
-	// Volume tiff_label = open_tiff("7nm/input.tif", true);
-	Volume tiff_label = open_tiff("7nm/binary-labels.tif", false, true);
+	// Volume tiff_data = open_tiff("7nm/input.tif", true);
+	// // Volume tiff_label = open_tiff("7nm/input.tif", true);
+	// Volume tiff_label = open_tiff("7nm/binary-labels.tif", false, true);
+
+	Volume tiff_data = open_tiff("isbi/input.tif", true);
+	Volume tiff_label = open_tiff("isbi/label.tif", false, true);
 
 	cout << tiff_data.shape << endl;
 	cout << tiff_label.shape << endl;
-	//cout << tif_data.to_vector() << endl;
-	//cout << tif_label.to_vector() << endl;
+	// return 0;
+	//cout << tiff_data.to_vector() << endl;
+	//cout << tiff_label.to_vector() << endl;
 
 	//VolumeShape shape{100, 1, 256, 256};
 	//VolumeShape shape{168, 1, 255, 255};
@@ -41,17 +49,18 @@ int main() {
 	// out_data.init_normal(0, .5);
 
 	VolumeNetwork net(shape);
-	// net.add_vlstm(3, 3, 10);
-	// net.add_fc(3);
-	// net.add_tanh();
 
-	net.add_fc(5);
+	net.add_fc(10);
 	net.add_tanh();
+
 	net.add_vlstm(3, 5, 10);
 	net.add_fc(10);
 	net.add_tanh();
 	net.add_vlstm(3, 5, 10);
-	net.add_fc(2);
+	net.add_fc(10);
+	net.add_tanh();
+	// net.add_vlstm(3, 5, 10);
+	 net.add_fc(2);
 	//net.add_sigmoid();
 	net.add_softmax();
 	// net.add_tanh();
@@ -61,32 +70,47 @@ int main() {
 	net.finish();
 	net.init_normal(0, .5);
 
+	cout << net.volumes[0]->x.shape << endl;
+	cout << tiff_data.shape << endl;
 	net.set_input(tiff_data);
-	net.volumes[0]->x.draw_slice("in_8.png", 8);
 
-	net.load("network.net");
+	net.volumes[0]->x.draw_slice("img/in_8.png", 8);
+
+	// if (exists("network.net")) {
+	// 	cout << "loading network" << endl;
+	// 	net.load("network.net");
+	// }
 
 	int epoch(0);
 	while (true) {
+
+		Timer ftimer;
 		net.forward();
+		cout << "forward took:" << ftimer.since() << endl;
+
 		ostringstream oss;
-		oss << "lala_" << epoch << ".png";
+		oss << "img/lala_" << epoch << ".png";
 		net.output().draw_slice(oss.str(), 8);
 		//cout << net.param.to_vector() << endl;
 		logger << "epoch: " << epoch << ": loss " << net.calculate_loss(tiff_label) << "\n";
 
+
+		Timer timer;
 		net.backward();
+		cout << "backward took:" << timer.since() << "\n\n";
+
 		// cout << net.grad.to_vector() << endl;
-		//net.update(.1);
+		// net.update(.1);
 
 		//SGD
 		// net.grad *= .00001;
 		// net.param += net.grad;
 
 		//RMS PROP
-		float decay = 0.9;
+		float decay = epoch < 4 ? 0.5 : 0.1;
 		float eps = .00001;
-		float lr = 0.0003;
+		// float lr = 0.1;
+		float lr = epoch < 4 ? .01 : .01;
 
 		net.a = net.grad;
 		net.a *= net.a;
@@ -100,15 +124,28 @@ int main() {
 
 		net.c = net.grad;
 		net.c /= net.b;
+
+		//extra trick
+		net.d = net.c;
+		net.d *= (1.0 - decay);
+		net.e *= decay;
+		net.e += net.d;
+
+		net.d = net.d;
+		net.d.abs();
+		net.c *= net.d;
+
+		//update
 		net.c *= lr;
 		net.param += net.c;
 
 		++epoch;
-		net.save("network.net");
+		net.save(netname);
+		// return 0;
 	}
 
 	// VLSTM vlstm(shape, kg, ko, c);
-	// vlstm.x.x.from_volume(tif_data);
+	// vlstm.x.x.from_volume(tiff_data);
 	// vlstm.init_normal(0.0, .05);
 
 	// while (true) {
@@ -117,13 +154,13 @@ int main() {
 	// 	vlstm.forward();
 	// 	cout << "output norm: " << vlstm.y.x.norm() << endl;
 	// 	//cout << vlstm.y.x.to_vector() << endl;
-	// 	//cout << tif_label.to_vector() << endl;
+	// 	//cout << tiff_label.to_vector() << endl;
 	// 	// vlstm.operations[4]->volumes["c"]->x.draw_slice("c.png", 4);
 	// 	vlstm.y.x.draw_slice("out.png", 8);
 	// 	vlstm.x.x.draw_slice("in.png", 8);
-	// 	tif_label.draw_slice("target.png", 8);
+	// 	tiff_label.draw_slice("target.png", 8);
 
-	// 	vlstm.y.diff.from_volume(tif_label);
+	// 	vlstm.y.diff.from_volume(tiff_label);
 	// 	vlstm.y.diff -= vlstm.y.x;
 
 	// 	float norm = vlstm.y.diff.norm();

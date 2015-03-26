@@ -32,6 +32,8 @@ __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, float
 		case 5:
 			copy_c(in + in_index, out + get_index(X, Z, Y, C, x, z, Y - 1 - y), X * Y, X * Z, C);
 			break;
+		// default:
+		// 	throw "";
 	}
 }
 
@@ -79,7 +81,7 @@ void divide(Volume &from, Volume &to, int n) {
 	dim3 dimBlock( BW, BH, 1 );
 	dim3 dimGrid( (shape.w + BW - 1) / BW, (shape.h + BH - 1) / BH, shape.z );
 
-	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, from.data, to.data, n);
+	divide_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, from.data(), to.data(), n);
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 }
@@ -95,7 +97,7 @@ void combine(Volume &from, Volume &to, int n) {
 	dim3 dimBlock( BW, BH, 1 );
 	dim3 dimGrid( (shape.w + BW - 1) / BW, (shape.h + BH - 1) / BH, shape.z );
 
-	combine_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data, from.data, n);
+	combine_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data(), from.data(), n);
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 }
