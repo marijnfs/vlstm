@@ -79,7 +79,7 @@ struct TimeOperation {
 
 struct TimeOperation1 : public TimeOperation
 {
-	TimeOperation1(Operation<F> &op, VolumeSet &in, VolumeSet &out, int dt, bool first);
+	TimeOperation1(Operation<F> &op, VolumeSet &in, VolumeSet &out, int dt, float beta = 1.0);
 
 	void forward(int t);
 	void backward(int t);
@@ -89,7 +89,7 @@ struct TimeOperation1 : public TimeOperation
 
 	Operation<F> &op;
 	int T, dt;
-	bool first;
+	float beta;
 
 	VolumeSet &in, &out;
 
@@ -100,7 +100,7 @@ struct TimeOperation1 : public TimeOperation
 
 struct TimeOperation2 : public TimeOperation
 {
-	TimeOperation2(Operation2<F> &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, bool first);
+	TimeOperation2(Operation2<F> &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, float beta = 1.0);
 
 	void forward(int t);
 	void backward(int t);
@@ -110,7 +110,7 @@ struct TimeOperation2 : public TimeOperation
 
 	Operation2<F> &op;
 	int T, dt;
-	bool first;
+	float beta;
 	VolumeSet &in, &in2, &out;
 
 	Tensor<F> in_t, in2_t, out_t;

@@ -76,7 +76,8 @@ int main(int argc, char **argv) {
 	cout << net.volumes[0]->x.shape << endl;
 	cout << tiff_data.shape << endl;
 	net.set_input(tiff_data);
-	// net.volumes[0]->x.draw_slice("in_8.png", 8);
+	net.volumes[0]->x.draw_slice("in_3.png", 3);
+	tiff_label.draw_slice("label_3.png", 3);
 
 	if (argc > 1) {
 	  net.load(argv[1]);
@@ -128,7 +129,7 @@ int main(int argc, char **argv) {
 		net.c /= net.b;
 
 		//extra trick
-		
+
 		net.d = net.c;
 		net.d *= (1.0 - decay);
 		net.e *= decay;
@@ -137,7 +138,7 @@ int main(int argc, char **argv) {
 		net.d = net.e;
 		net.d.abs();
 		net.c *= net.d;
-		
+
 
 		//update
 		net.c.clip(3.);

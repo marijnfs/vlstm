@@ -14,8 +14,8 @@
 struct LSTMOperation {
 	LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap *reuse = 0);
 
-	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0);
- 	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false, VolumeSetMap *reuse = 0);
+	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
+ 	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
 
  	void add_volume(std::string name, VolumeShape shape, VolumeSetMap *reuse = 0);
 	void add_volume(std::string name, VolumeSet &set);

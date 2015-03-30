@@ -29,29 +29,53 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 
 void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	bool DELAY(true), NOW(false);
+	// add_op("x", "i", xi, NOW, reuse);
+	// add_op("h", "i", hi, DELAY, reuse);
+	// add_op("i", "fi", sig, NOW, reuse);
+
+	// add_op("x", "r", xr, NOW, reuse);
+	// add_op("h", "r", hr, DELAY, reuse);
+	// add_op("r", "fr", sig, NOW, reuse);
+
+	// add_op("x", "s", xs, NOW, reuse);
+	// add_op("h", "s", hs, DELAY, reuse);
+	// add_op("s", "fs", tan, NOW, reuse);
+
+	// add_op("fs", "fi", "c", gate, NOW, reuse);
+	// add_op("c", "fr", "c", gate, DELAY, reuse);
+	// // add_op("c", "fc", tan, reuse);
+	// add_op("c", "fc", sig, NOW, reuse);
+
+	// add_op("x", "o", xo, NOW, reuse);
+	// add_op("h", "o", ho, DELAY, reuse);
+	// //add_op("c", "o", co, reuse);
+	// add_op("o", "fo", sig, NOW, reuse);
+
+	// add_op("fc", "fo", "h", gate, NOW, reuse);
+
 	add_op("x", "i", xi, NOW, reuse);
 	add_op("h", "i", hi, DELAY, reuse);
-	add_op("i", "fi", sig, NOW, reuse);
+	add_op("i", "i", sig, NOW, reuse, 0.0);
 
 	add_op("x", "r", xr, NOW, reuse);
 	add_op("h", "r", hr, DELAY, reuse);
-	add_op("r", "fr", sig, NOW, reuse);
+	add_op("r", "r", sig, NOW, reuse, 0.0);
 
 	add_op("x", "s", xs, NOW, reuse);
 	add_op("h", "s", hs, DELAY, reuse);
-	add_op("s", "fs", tan, NOW, reuse);
+	add_op("s", "s", tan, NOW, reuse, 0.0);
 
-	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "fr", "c", gate, DELAY, reuse);
+	add_op("s", "i", "c", gate, NOW, reuse);
+	add_op("c", "r", "c", gate, DELAY, reuse);
 	// add_op("c", "fc", tan, reuse);
 	add_op("c", "fc", sig, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
 	add_op("h", "o", ho, DELAY, reuse);
 	//add_op("c", "o", co, reuse);
-	add_op("o", "fo", sig, NOW, reuse);
+	add_op("o", "o", sig, NOW, reuse, 0.0);
 
-	add_op("fc", "fo", "h", gate, NOW, reuse);
+	add_op("fc", "o", "h", gate, NOW, reuse);
 }
 
 void LSTMOperation::add_volume(string name, VolumeShape shape, VolumeSetMap *reuse) {
@@ -101,7 +125,7 @@ void LSTMOperation::clear() {
 		p->zero_grad();
 }
 
-void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse) {
+void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
 	VolumeSet &in(*volumes[ins]);
 
 	bool first(false);
@@ -113,7 +137,7 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 
 	int dt = delay ? 1 : 0;
 
-	operations.push_back(new TimeOperation1(op, in, out, dt, first));
+	operations.push_back(new TimeOperation1(op, in, out, dt, beta));
 	try {
 		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
 		// cout << "a parameter" << endl;
@@ -122,7 +146,7 @@ void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay
 	}
 }
 
-void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay, VolumeSetMap *reuse) {
+void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
 	VolumeSet &in(*volumes[ins]);
 	VolumeSet &in2(*volumes[in2s]);
 
@@ -134,7 +158,7 @@ void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &
 	VolumeSet &out(*volumes[outs]);
 
 	int dt = delay ? 1 : 0;
-	operations.push_back(new TimeOperation2(op, in, in2, out, dt, first));
+	operations.push_back(new TimeOperation2(op, in, in2, out, dt, beta));
 }
 
 
@@ -209,11 +233,11 @@ void VLSTMOperation::forward(Volume &in, Volume &out) {
 		combine(operations[i]->output().x, out, i);
 		if (i == 0) {
 			operations[0]->volumes["c"]->x.draw_slice("c1.png", 1);
-			operations[0]->volumes["c"]->x.draw_slice("c8.png", 8);
+			operations[0]->volumes["c"]->x.draw_slice("c3.png", 3);
 			operations[0]->volumes["i"]->x.draw_slice("i1.png", 1);
-			operations[0]->volumes["i"]->x.draw_slice("i8.png", 8);
+			operations[0]->volumes["i"]->x.draw_slice("i3.png", 3);
 			operations[0]->volumes["o"]->x.draw_slice("o1.png", 1);
-			operations[0]->volumes["o"]->x.draw_slice("o8.png", 8);
+			operations[0]->volumes["o"]->x.draw_slice("o3.png", 3);
 		}
 	}
 }
