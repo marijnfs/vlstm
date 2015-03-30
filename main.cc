@@ -11,7 +11,7 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char **argv) {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
 
@@ -50,17 +50,19 @@ int main() {
 
 	VolumeNetwork net(shape);
 
-	net.add_fc(10);
-	net.add_tanh();
+	net.add_fc(8);
+	//net.add_tanh();
 
-	net.add_vlstm(3, 5, 10);
-	net.add_fc(10);
+	net.add_vlstm(3, 5, 8);
+	net.add_fc(8);
 	net.add_tanh();
 	net.add_vlstm(3, 5, 10);
 	net.add_fc(10);
 	net.add_tanh();
-	// net.add_vlstm(3, 5, 10);
-	 net.add_fc(2);
+	// net.add_vlstm(3, 5, 8);
+	// net.add_fc(8);
+	// net.add_tanh();
+	net.add_fc(2);
 	//net.add_sigmoid();
 	net.add_softmax();
 	// net.add_tanh();
@@ -68,18 +70,17 @@ int main() {
 	// net.add_fc(1);
 
 	net.finish();
-	net.init_normal(0, .5);
+	//net.init_normal(0, .1);
+	net.init_uniform(.5);
 
 	cout << net.volumes[0]->x.shape << endl;
 	cout << tiff_data.shape << endl;
 	net.set_input(tiff_data);
+	// net.volumes[0]->x.draw_slice("in_8.png", 8);
 
-	net.volumes[0]->x.draw_slice("img/in_8.png", 8);
-
-	// if (exists("network.net")) {
-	// 	cout << "loading network" << endl;
-	// 	net.load("network.net");
-	// }
+	if (argc > 1) {
+	  net.load(argv[1]);
+	}
 
 	int epoch(0);
 	while (true) {
@@ -90,7 +91,7 @@ int main() {
 
 		ostringstream oss;
 		oss << "img/lala_" << epoch << ".png";
-		net.output().draw_slice(oss.str(), 8);
+		net.output().draw_slice(oss.str(), 3);
 		//cout << net.param.to_vector() << endl;
 		logger << "epoch: " << epoch << ": loss " << net.calculate_loss(tiff_label) << "\n";
 
@@ -107,11 +108,12 @@ int main() {
 		// net.param += net.grad;
 
 		//RMS PROP
-		float decay = epoch < 4 ? 0.5 : 0.1;
+		float decay = epoch < 4 ? 0.5 : 0.9;
 		float eps = .00001;
-		// float lr = 0.1;
-		float lr = epoch < 4 ? .01 : .01;
+		//float lr = 0.001;
+		//float lr = 0.01;
 
+		float lr = epoch < 4 ? .001 : .01;
 		net.a = net.grad;
 		net.a *= net.a;
 		net.rmse *= decay;
@@ -126,16 +128,19 @@ int main() {
 		net.c /= net.b;
 
 		//extra trick
+		
 		net.d = net.c;
 		net.d *= (1.0 - decay);
 		net.e *= decay;
 		net.e += net.d;
 
-		net.d = net.d;
+		net.d = net.e;
 		net.d.abs();
 		net.c *= net.d;
+		
 
 		//update
+		net.c.clip(3.);
 		net.c *= lr;
 		net.param += net.c;
 

@@ -98,6 +98,11 @@ void VolumeNetwork::init_normal(float mean, float std) {
 		o->init_normal(mean, std);
 }
 
+void VolumeNetwork::init_uniform(float var) {
+	for (auto &o : operations)
+		o->init_uniform(var);
+}
+
 void VolumeNetwork::set_input(Volume &in) {
 	volumes[0]->x.from_volume(in);
 }

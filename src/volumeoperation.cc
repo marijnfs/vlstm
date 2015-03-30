@@ -50,6 +50,10 @@ void FCVolumeOperation::init_normal(float mean, float std) {
 	op.init_normal(mean, std);
 }
 
+void FCVolumeOperation::init_uniform(float std) {
+	op.init_uniform(std);
+}
+
 void FCVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
 	op.register_params(params, grads);
 }

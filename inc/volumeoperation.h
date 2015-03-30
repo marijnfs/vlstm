@@ -13,6 +13,7 @@ struct VolumeOperation {
 	virtual void update(float lr) {}
 	virtual void forward_dry_run(Volume &in, Volume &out) {}
 	virtual void init_normal(float mean, float std) {}
+	virtual void init_uniform(float std) {}
 	virtual void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {}
 };
 
@@ -26,6 +27,7 @@ struct FCVolumeOperation : public VolumeOperation {
 	void update(float lr);
 
 	void init_normal(float mean, float std);
+	void init_uniform(float std);
 	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
 	VolumeShape output_shape(VolumeShape s);
 

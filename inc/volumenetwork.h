@@ -21,6 +21,7 @@ struct VolumeNetwork {
 	void update(float lr);
 	void clear();
 	void init_normal(float mean, float std);
+	void init_uniform(float std);
 	void align_params();
 
 	Volume &output();

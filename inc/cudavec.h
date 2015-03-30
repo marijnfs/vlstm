@@ -52,6 +52,7 @@ struct CudaVec {
 
 	CudaVec &sqrt();
 	CudaVec &abs();
+	CudaVec &clip(float limit);
 
 	CudaVec &operator-=(CudaVec &other);
 	CudaVec &operator+=(CudaVec &other);
@@ -66,6 +67,7 @@ struct CudaVec {
 
 __global__ void sqrt_kernel(float *v, int n);
 __global__ void abs_kernel(float *v, int n);
+__global__ void clip_kernel(float *v, int n, float limit);
 
 __global__ void times_kernel(float *v, float *other, int n);
 __global__ void divide_kernel(float *v, float *other, int n);
