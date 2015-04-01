@@ -11,6 +11,12 @@
 
 using namespace std;
 
+void print_last(vector<float> vals, int n) {
+	for (size_t i(vals.size() - n); i < vals.size(); ++i)
+		cout << vals[i] << " ";
+	cout << endl;
+}
+
 int main(int argc, char **argv) {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
@@ -53,15 +59,15 @@ int main(int argc, char **argv) {
 	net.add_fc(8);
 	//net.add_tanh();
 
-	net.add_vlstm(3, 5, 8);
-	net.add_fc(8);
-	net.add_tanh();
-	net.add_vlstm(3, 5, 10);
+	net.add_vlstm(7, 7, 8);
 	net.add_fc(10);
 	net.add_tanh();
-	// net.add_vlstm(3, 5, 8);
-	// net.add_fc(8);
-	// net.add_tanh();
+	net.add_vlstm(7, 7, 16);
+	net.add_fc(32);
+	net.add_tanh();
+	/*net.add_vlstm(3, 5, 16);
+	net.add_fc(16);
+	net.add_tanh();*/
 	net.add_fc(2);
 	//net.add_sigmoid();
 	net.add_softmax();
@@ -71,7 +77,7 @@ int main(int argc, char **argv) {
 
 	net.finish();
 	//net.init_normal(0, .1);
-	net.init_uniform(.5);
+	net.init_uniform(.3);
 
 	cout << net.volumes[0]->x.shape << endl;
 	cout << tiff_data.shape << endl;
@@ -84,18 +90,73 @@ int main(int argc, char **argv) {
 	}
 
 	int epoch(0);
-	while (true) {
+	//MCMC
+	int rejects(0);
 
+	cout << "Starting MH" << endl;
+	// if (false) {
+	while (true) {
+		static float SIGMA = 0.000015;
+		static float SIGMA_DECAY = pow(.5, 1.0 / 50);
+		static float last_loss = 9999999;
+		if (rand_float() > .5)
+			net.a.init_normal(0, 0.05);
+		else
+			net.a.init_normal(0, 0.005);
+		net.b = net.param;
+		net.param += net.a;
+
+		net.forward();
+		ostringstream oss;
+		oss << "img/mh-" << epoch << ".png";
+		net.output().draw_slice(oss.str(), 3);
+		//cout << net.output().to_vector() << endl;
+		//cout << net.param.to_vector() << endl;
+		float loss = net.calculate_loss(tiff_label);
+		logger << "epoch: " << epoch << ": loss " << loss << "\n";
+
+		if (loss < last_loss || (exp(-loss/SIGMA) / exp(-last_loss/SIGMA)) > rand_float()) {
+			last_loss = loss;
+			cout << "accept" << endl;
+			rejects = 0;
+		}
+		else{
+			net.param = net.b;
+			cout << "reject" << endl;
+			++rejects;
+		}
+		if (rejects > 10)
+			break;
+		SIGMA *= SIGMA_DECAY;
+		cout << "sigma: " << SIGMA << endl;
+		++epoch;
+		net.save(netname);
+	}
+
+
+	cout << "Starting MOM-RMSPROP" <<endl;
+	epoch = 0;
+	float last_loss = 9999999.;
+
+	// float const LR_DECAY = pow(.5, 1.0 / 200);
+
+	while (true) {
 		Timer ftimer;
 		net.forward();
 		cout << "forward took:" << ftimer.since() << endl;
 
 		ostringstream oss;
-		oss << "img/lala_" << epoch << ".png";
+		oss << "img/mom-rmsprop-" << epoch << ".png";
 		net.output().draw_slice(oss.str(), 3);
+		//cout << net.output().to_vector() << endl;
 		//cout << net.param.to_vector() << endl;
-		logger << "epoch: " << epoch << ": loss " << net.calculate_loss(tiff_label) << "\n";
+		float loss = net.calculate_loss(tiff_label);
+		logger << "epoch: " << epoch << ": loss " << loss << "\n";
+		if (loss < last_loss) {
+			last_loss = loss;
+			net.save(netname);
 
+		}
 
 		Timer timer;
 		net.backward();
@@ -110,6 +171,7 @@ int main(int argc, char **argv) {
 
 		//RMS PROP
 		float decay = epoch < 4 ? 0.5 : 0.9;
+		float mean_decay = epoch < 4 ? 0.5 : 0.9;
 		float eps = .00001;
 		//float lr = 0.001;
 		//float lr = 0.01;
@@ -130,23 +192,36 @@ int main(int argc, char **argv) {
 
 		//extra trick
 
+		//net.d = net.c;
+		//net.d *= (1.0 - mean_decay);
+		//net.e *= mean_decay;
+		//net.e += net.d;
+
+		//net.d = net.e;
+		//net.d.abs();
+		//net.c *= net.d;
+
+		//extra trick 2
+
 		net.d = net.c;
-		net.d *= (1.0 - decay);
-		net.e *= decay;
+		//net.d.abs();
+		net.d *= (1.0 - mean_decay);
+		net.e *= mean_decay;
 		net.e += net.d;
-
-		net.d = net.e;
-		net.d.abs();
-		net.c *= net.d;
-
+		net.c = net.e;
+		//net.c *= net.e;
 
 		//update
-		net.c.clip(3.);
+		//net.c.clip(1.);
 		net.c *= lr;
 		net.param += net.c;
 
+		print_last(net.grad.to_vector(), 10);
+		print_last(net.rmse.to_vector(), 10);
+		print_last(net.e.to_vector(), 10);
+
+
 		++epoch;
-		net.save(netname);
 		// return 0;
 	}
 

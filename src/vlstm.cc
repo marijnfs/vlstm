@@ -101,6 +101,11 @@ void LSTMOperation::init_normal(F mean, F std) {
 		p->init_normal(mean, std);
 }
 
+void LSTMOperation::init_uniform(F var) {
+	for (auto &p : parameters)
+		p->init_uniform(var);
+}
+
 void LSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
 	for (auto &p : parameters)
 		p->register_params(params, grads);
@@ -268,6 +273,11 @@ VolumeShape VLSTMOperation::output_shape(VolumeShape s) {
 void VLSTMOperation::init_normal(F mean, F std) {
 	for (auto &o : operations)
 		o->init_normal(mean, std);
+}
+
+void VLSTMOperation::init_uniform(F std) {
+	for (auto &o : operations)
+		o->init_uniform(std);
 }
 
 void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
