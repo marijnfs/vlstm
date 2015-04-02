@@ -24,6 +24,7 @@ struct VolumeNetwork {
 	void init_uniform(float std);
 	void align_params();
 
+	Volume &input();
 	Volume &output();
 
 	void add_vlstm(int kg, int ko, int c);

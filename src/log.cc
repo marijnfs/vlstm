@@ -27,7 +27,7 @@ string date_string()
   time (&rawtime);
   timeinfo = localtime(&rawtime);
 
-  strftime(buffer,80,"%Y-%m-%d-%I:%M",timeinfo);
+  strftime(buffer,80,"%Y-%m-%d-%H:%M",timeinfo);
   string str(buffer);
   cout << str << std::endl;
 

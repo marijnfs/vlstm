@@ -111,6 +111,10 @@ Volume &VolumeNetwork::output() {
 	return last(volumes)->x;
 }
 
+Volume &VolumeNetwork::input() {
+	return first(volumes)->x;
+}
+
 float VolumeNetwork::calculate_loss(Volume &target) {
 	last(volumes)->diff.from_volume(target);
 	last(volumes)->diff -= last(volumes)->x;

@@ -23,7 +23,11 @@ __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, float
 
 __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float const *out, int n);
 
+__global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out, VolumeShape in2shape, VolumeShape out2shape,
+	float *in2, float *out2, int xs, int ys, int zs);
+
 void divide(Volume &v, Volume &to, int n);
 void combine(Volume &v, Volume &to, int n);
+void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2);
 
 #endif

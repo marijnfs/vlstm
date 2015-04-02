@@ -1,5 +1,6 @@
 #include "divide.h"
 #include "util.h"
+#include "rand.h"
 
 using namespace std;
 
@@ -70,6 +71,28 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float cons
 
 }
 
+__global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out,
+	VolumeShape in2shape, VolumeShape out2shape,
+	float *in2, float *out2, int xs, int ys, int zs) {
+
+	int x(threadIdx.x + blockDim.x * blockIdx.x);
+	int y(threadIdx.y + blockDim.y * blockIdx.y);
+	int z(threadIdx.z + blockDim.z * blockIdx.z);
+
+	if (x >= outshape.w || y >= outshape.h || z >= outshape.z)
+		return;
+
+	int in_index = get_index(inshape.w, inshape.h, inshape.z, inshape.c, x+xs, y+ys, z+zs);
+	int in2_index = get_index(in2shape.w, in2shape.h, in2shape.z, in2shape.c, x+xs, y+ys, z+zs);
+	int out_index = get_index(outshape.w, outshape.h, outshape.z, outshape.c, x, y, z);
+	int out2_index = get_index(out2shape.w, out2shape.h, out2shape.z, out2shape.c, x, y, z);
+
+	copy_c(in + in_index, out + out_index, inshape.w * inshape.h, outshape.w * outshape.h, outshape.c);
+	copy_c(in2 + in2_index, out2 + out2_index, in2shape.w * in2shape.h, out2shape.w * out2shape.h, out2shape.c);
+
+
+}
+
 void divide(Volume &from, Volume &to, int n) {
 	VolumeShape shape = from.shape;
 
@@ -98,6 +121,34 @@ void combine(Volume &from, Volume &to, int n) {
 	dim3 dimGrid( (shape.w + BW - 1) / BW, (shape.h + BH - 1) / BH, shape.z );
 
 	combine_kernel<<<dimGrid, dimBlock>>>(shape.w, shape.h, shape.z, shape.c, to.data(), from.data(), n);
+	handle_error( cudaGetLastError() );
+	handle_error( cudaDeviceSynchronize());
+}
+
+void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2) {
+	VolumeShape inshape = in.shape;
+	VolumeShape outshape = out.shape;
+	VolumeShape in2shape = in2.shape;
+	VolumeShape out2shape = out2.shape;
+
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+	int const BW(32);
+	int const BH = BLOCKSIZE / BW;
+
+	dim3 dimBlock( BW, BH, 1 );
+	dim3 dimGrid( (outshape.w + BW - 1) / BW, (outshape.h + BH - 1) / BH, outshape.z );
+
+	int x = Rand::randn(in.shape.w - out.shape.w + 1);
+	int y = Rand::randn(in.shape.h - out.shape.h + 1);
+	int z = Rand::randn(in.shape.z - out.shape.z + 1);
+	cout <<"copy_subvolume " << in2shape.w << " " << in2shape.h << " " << in2shape.c << endl;
+	cout <<"copy_subvolume " << x << " " << y << " " << z << endl;
+
+	copy_subvolume_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(),
+		in2shape, out2shape, in2.data(), out2.data(), x, y, z);
+
+
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 }
