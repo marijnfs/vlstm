@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
 	while (true) {
 		ostringstream ose;
 		ose << "img/mom_sub_in-" << epoch << ".png";
-		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset);
+		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, rand()%2, rand()%2, rand()%2);
 		net.input().draw_slice(ose.str(),0);
 		ostringstream osse;
 		osse << "img/mom_sub_label-" << epoch << ".png";

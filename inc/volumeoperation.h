@@ -15,6 +15,7 @@ struct VolumeOperation {
 	virtual void init_normal(float mean, float std) {}
 	virtual void init_uniform(float std) {}
 	virtual void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {}
+	virtual void sharing() {}
 };
 
 struct FCVolumeOperation : public VolumeOperation {

@@ -73,7 +73,7 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float cons
 
 __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out,
 	VolumeShape in2shape, VolumeShape out2shape,
-	float *in2, float *out2, int xs, int ys, int zs) {
+	float *in2, float *out2, int xs, int ys, int zs, bool xflip, bool yflip, bool zflip) {
 
 	int x(threadIdx.x + blockDim.x * blockIdx.x);
 	int y(threadIdx.y + blockDim.y * blockIdx.y);
@@ -82,10 +82,13 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 	if (x >= outshape.w || y >= outshape.h || z >= outshape.z)
 		return;
 
+	int outx = xflip ? (outshape.w - 1 - x) : x;
+	int outy = yflip ? (outshape.h - 1 - y) : y;
+	int outz = zflip ? (outshape.z - 1 - z) : z;
 	int in_index = get_index(inshape.w, inshape.h, inshape.z, inshape.c, x+xs, y+ys, z+zs);
 	int in2_index = get_index(in2shape.w, in2shape.h, in2shape.z, in2shape.c, x+xs, y+ys, z+zs);
-	int out_index = get_index(outshape.w, outshape.h, outshape.z, outshape.c, x, y, z);
-	int out2_index = get_index(out2shape.w, out2shape.h, out2shape.z, out2shape.c, x, y, z);
+	int out_index = get_index(outshape.w, outshape.h, outshape.z, outshape.c, outx, outy, outz);
+	int out2_index = get_index(out2shape.w, out2shape.h, out2shape.z, out2shape.c, outx, outy, outz);
 
 	copy_c(in + in_index, out + out_index, inshape.w * inshape.h, outshape.w * outshape.h, outshape.c);
 	copy_c(in2 + in2_index, out2 + out2_index, in2shape.w * in2shape.h, out2shape.w * out2shape.h, out2shape.c);
@@ -125,7 +128,7 @@ void combine(Volume &from, Volume &to, int n) {
 	handle_error( cudaDeviceSynchronize());
 }
 
-void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2) {
+void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool xflip, bool yflip, bool zflip) {
 	VolumeShape inshape = in.shape;
 	VolumeShape outshape = out.shape;
 	VolumeShape in2shape = in2.shape;
@@ -146,7 +149,7 @@ void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2) {
 	cout <<"copy_subvolume " << x << " " << y << " " << z << endl;
 
 	copy_subvolume_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(),
-		in2shape, out2shape, in2.data(), out2.data(), x, y, z);
+		in2shape, out2shape, in2.data(), out2.data(), x, y, z, xflip, yflip, zflip);
 
 
 	handle_error( cudaGetLastError() );

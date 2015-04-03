@@ -31,11 +31,16 @@ void VolumeNetwork::forward_dry_run() {
 
 void VolumeNetwork::finish() {
 	forward_dry_run();
+
 	register_params();
 	param.resize(n_params);
 	grad.resize(n_params);
 
 	align_params();
+	for(auto o : operations)
+		o->sharing();
+
+
 	//init_normal(0, 0);
 	a.resize(param.n);
 	b.resize(param.n);

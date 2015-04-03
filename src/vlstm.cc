@@ -111,6 +111,18 @@ void LSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector
 		p->register_params(params, grads);
 }
 
+void LSTMOperation::share(LSTMOperation &o){
+	xi.share(o.xi);
+	hi.share(o.hi); //input gate
+	xr.share(o.xr);
+	hr.share(o.hr); //remember gate (forget gates dont make sense!)
+	xs.share(o.xs);
+	hs.share(o.hs); //cell input
+	xo.share(o.xo);
+	ho.share(o.ho);
+	co.share(o.co); //output gate
+}
+
 void LSTMOperation::update(float lr) {
 	for (auto &p : parameters) {
 		p->update(lr);
@@ -126,6 +138,9 @@ void LSTMOperation::clear() {
 		//v.second->x.zero();
 		v.second->diff.zero();
 	}
+}
+
+void LSTMOperation::clear_grad() {
 	for (auto& p : parameters)
 		p->zero_grad();
 }
@@ -182,11 +197,16 @@ void LSTMOperation::backward() {
 		for (int n(operations.size() - 1); n >= 0; --n) {
 			operations[n]->backward(t);
 		}
-	// cout << "scaling" << endl;
-	for (auto &p : parameters)
-		//p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
-		p->scale_grad(1.0 / sqrt(in_shape.z * in_shape.w * in_shape.h));
+	// // cout << "scaling" << endl;
+	// for (auto &p : parameters)
+	// 	//p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
+	// 	p->scale_grad(1.0 / sqrt(in_shape.z * in_shape.w * in_shape.h));
 	// cout << "done" << endl;
+}
+
+void LSTMOperation::scale_grad() {
+	for (auto &p : parameters)
+		p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
 }
 
 void LSTMOperation::forward_dry_run() {
@@ -224,9 +244,18 @@ VLSTMOperation::VLSTMOperation(VolumeShape s, int kg, int ko, int c_, VolumeSetM
 		op->forward_dry_run();
 }
 
+void VLSTMOperation::sharing() {
+	///sharing weights
+	operations[0]->share(*operations[1]);
+	operations[2]->share(*operations[3]);
+	operations[2]->share(*operations[4]);
+	operations[2]->share(*operations[5]);
+}
+
 void VLSTMOperation::clear() {
 	for (auto& o : operations) {
 		o->clear();
+		o->clear_grad();
 	}
 }
 
@@ -248,6 +277,9 @@ void VLSTMOperation::forward(Volume &in, Volume &out) {
 }
 
 void VLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
+	operations[0]->clear_grad();
+	operations[2]->clear_grad();
+
 	for (size_t i(0); i < operations.size(); ++i) {
 		//forward
 		operations[i]->clear();
@@ -259,6 +291,8 @@ void VLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 		operations[i]->backward();
 		combine(operations[i]->input().diff, in.diff, i);
 	}
+	operations[0]->scale_grad();
+	operations[2]->scale_grad();
 }
 
 void VLSTMOperation::forward_dry_run(Volume &in, Volume &out){
@@ -281,13 +315,18 @@ void VLSTMOperation::init_uniform(F std) {
 }
 
 void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
-	for (auto &o : operations)
-		o->register_params(params, grads);
+	//for (auto &o : operations)
+		//o->register_params(params, grads);
+
+	operations[0]->register_params(params, grads);
+	operations[2]->register_params(params, grads);
 }
 
 void VLSTMOperation::update(float lr) {
-	for (auto &o : operations) {
-		// cout << "update lstm op" << endl;
-		o->update(lr);
-	}
+	// for (auto &o : operations) {
+	// 	// cout << "update lstm op" << endl;
+	// 	o->update(lr);
+	// }
+	operations[0]->update(lr);
+	operations[2]->update(lr);
 }
