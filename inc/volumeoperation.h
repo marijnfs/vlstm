@@ -16,6 +16,7 @@ struct VolumeOperation {
 	virtual void init_uniform(float std) {}
 	virtual void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {}
 	virtual void sharing() {}
+	virtual void describe(std::ostream &out){}
 };
 
 struct FCVolumeOperation : public VolumeOperation {
@@ -31,6 +32,7 @@ struct FCVolumeOperation : public VolumeOperation {
 	void init_uniform(float std);
 	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
 	VolumeShape output_shape(VolumeShape s);
+	void describe(std::ostream &out) { out << "fc " << tin.c << " " << tout.c; }
 
 	ConvolutionOperation<F> op;
 	VolumeShape shape;
@@ -44,6 +46,7 @@ struct SoftmaxVolumeOperation : public VolumeOperation {
 
 	void forward(Volume &in, Volume &out);
 	void backward(VolumeSet &in, VolumeSet &out);
+	void describe(std::ostream &out) { out << "softmax"; }
 
 	SoftmaxOperation<F> op;
 	Tensor<F> tin, tout;
@@ -55,6 +58,7 @@ struct TanhVolumeOperation : public VolumeOperation {
 
 	void forward(Volume &in, Volume &out);
 	void backward(VolumeSet &in, VolumeSet &out);
+	void describe(std::ostream &out) { out << "tanh"; }
 
 	TanhOperation<F> op;
 	Tensor<F> tin, tout;
@@ -66,6 +70,7 @@ struct SigmoidVolumeOperation : public VolumeOperation {
 
 	void forward(Volume &in, Volume &out);
 	void backward(VolumeSet &in, VolumeSet &out);
+	void describe(std::ostream &out) { out << "sigmoid"; }
 
 	SigmoidOperation<F> op;
 	Tensor<F> tin, tout;

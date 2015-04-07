@@ -22,12 +22,14 @@ int main(int argc, char **argv) {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
 
+
+	string ds = date_string();
 	ostringstream oss;
-	oss << "log/result-" << date_string() << ".log";
+	oss << "log/result-" << ds << ".log";
 	Log logger(oss.str());
 
 	ostringstream oss1;
-	oss1 << "log/network-" << date_string() << ".net";
+	oss1 << "log/network-" << ds << ".net";
 	string netname = oss1.str();
 
 	//int kg(3), ko(3), c(1);
@@ -73,17 +75,18 @@ int main(int argc, char **argv) {
 
 	VolumeNetwork net(sub_shape);
 
-	net.add_fc(5);
+	net.add_fc(8);
 	//net.add_tanh();
 
-	net.add_vlstm(7, 7, 5);
-	net.add_fc(8);
+
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(32);
 	net.add_tanh();
-	net.add_vlstm(7, 7, 10);
-	net.add_fc(15);
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(32);
 	net.add_tanh();
-	net.add_vlstm(7, 7, 20);
-	net.add_fc(25);
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(32);
 	net.add_tanh();
 	net.add_fc(2);
 	//net.add_sigmoid();
@@ -96,6 +99,7 @@ int main(int argc, char **argv) {
 	//net.init_normal(0, .1);
 	net.init_uniform(.3);
 
+
 	cout << net.volumes[0]->x.shape << endl;
 	cout << tiff_data.shape << endl;
 	// net.set_input(tiff_data);
@@ -105,6 +109,10 @@ int main(int argc, char **argv) {
 	if (argc > 1) {
 	  net.load(argv[1]);
 	}
+
+	logger << "begin description\n";
+	net.describe(logger.file);
+	logger << "end description\n";
 
 	int epoch(0);
 	//MCMC
@@ -219,7 +227,7 @@ int main(int argc, char **argv) {
 		net.c = net.grad;
 		net.c /= net.b;
 
-		//extra trick
+		//Marijn Trick
 
 		//net.d = net.c;
 		//net.d *= (1.0 - mean_decay);
@@ -230,15 +238,13 @@ int main(int argc, char **argv) {
 		//net.d.abs();
 		//net.c *= net.d;
 
-		//extra trick 2
+		//Momentum
 
 		net.d = net.c;
-		//net.d.abs();
 		net.d *= (1.0 - mean_decay);
 		net.e *= mean_decay;
 		net.e += net.d;
 		net.c = net.e;
-		//net.c *= net.e;
 
 		//update
 		//net.c.clip(1.);
@@ -248,6 +254,7 @@ int main(int argc, char **argv) {
 		print_last(net.grad.to_vector(), 10);
 		print_last(net.rmse.to_vector(), 10);
 		print_last(net.e.to_vector(), 10);
+		print_last(net.param.to_vector(), 10);
 
 
 		++epoch;

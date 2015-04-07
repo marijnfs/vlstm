@@ -187,3 +187,11 @@ void VolumeNetwork::load(std::string path) {
 	vector<float> data = byte_read_vec<float>(in);
 	param.from_vector(data);
 }
+
+void VolumeNetwork::describe(std::ostream &out) {
+	for (auto &o : operations) {
+		o->describe(out);
+		out << endl;
+	}
+	out.flush();
+}

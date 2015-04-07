@@ -35,6 +35,7 @@ struct VolumeNetwork {
 
 	void save(std::string path);
 	void load(std::string path);
+	void describe(std::ostream &out);
 
 	std::vector<CudaPtr<F>> params;
 	std::vector<CudaPtr<F>> grads;

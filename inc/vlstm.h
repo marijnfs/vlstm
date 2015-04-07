@@ -76,8 +76,11 @@ struct VLSTMOperation : public VolumeOperation {
 	void init_normal(F mean, F std);
 	void init_uniform(F var);
 	void update(float lr);
+	void describe(std::ostream &out) { out << "vlstm " << kg << " " << ko << " " << c; }
 
+	int kg, ko;
 	int c;
+
 	std::vector<LSTMOperation*> operations;
 };
 

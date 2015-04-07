@@ -216,7 +216,7 @@ void LSTMOperation::forward_dry_run() {
 
 
 //Vlstm
-VLSTMOperation::VLSTMOperation(VolumeShape s, int kg, int ko, int c_, VolumeSetMap &vsm) : c(c_)
+VLSTMOperation::VLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm) : kg(kg_), ko(ko_), c(c_)
 {
 	// for (size_t i(0); i < 6; ++i)
 		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
