@@ -89,6 +89,15 @@ CudaVec &CudaVec::abs() {
 	return *this;
 }
 
+CudaVec &CudaVec::add(int idx, float val) {
+
+	add_scalarf<<<1, 1>>>(data+idx, val, 1);
+	handle_error( cudaGetLastError() );
+	handle_error( cudaDeviceSynchronize());
+	return *this;
+}
+
+
 CudaVec &CudaVec::operator*=(CudaVec &other) {
 	//primitive blocksize determination
 	int const BLOCKSIZE(1024);

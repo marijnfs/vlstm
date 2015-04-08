@@ -14,6 +14,7 @@ void VolumeNetwork::forward() {
 	for (int i(0); i < operations.size(); i++) {
 		operations[i]->forward(volumes[i]->x, volumes[i+1]->x);
 	}
+
 }
 
 void VolumeNetwork::backward() {
@@ -39,7 +40,7 @@ void VolumeNetwork::finish() {
 	align_params();
 	for(auto o : operations)
 		o->sharing();
-
+	clear();
 
 	//init_normal(0, 0);
 	a.resize(param.n);
@@ -48,7 +49,7 @@ void VolumeNetwork::finish() {
 	d.resize(param.n);
 	e.resize(param.n);
 	rmse.resize(param.n);
-	rmse += .01;
+	// rmse += .01;
 }
 
 void VolumeNetwork::register_params() {
@@ -91,10 +92,13 @@ void VolumeNetwork::update(float lr) {
 
 void VolumeNetwork::clear() {
 	for (int i(0); i < volumes.size(); i++) {
-		if (!i)
-			volumes[i]->diff.zero();
-		else
-			volumes[i]->zero();
+		// if (!i)
+		// 	volumes[i]->diff.zero();
+		// else
+		// 	volumes[i]->zero();
+		if (i)
+			volumes[i]->x.zero();
+		volumes[i]->diff.zero();
 	}
 }
 
@@ -109,7 +113,7 @@ void VolumeNetwork::init_uniform(float var) {
 }
 
 void VolumeNetwork::set_input(Volume &in) {
-	volumes[0]->x.from_volume(in);
+	first(volumes)->x.from_volume(in);
 }
 
 Volume &VolumeNetwork::output() {
@@ -124,7 +128,7 @@ float VolumeNetwork::calculate_loss(Volume &target) {
 	last(volumes)->diff.from_volume(target);
 	last(volumes)->diff -= last(volumes)->x;
 
-	float norm = last(volumes)->diff.norm();
+	float norm = last(volumes)->diff.norm2() * 0.5;
 	return norm;
 }
 

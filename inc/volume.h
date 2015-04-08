@@ -30,6 +30,8 @@ struct Volume {
 	void fill(F val);
   	int size();
   	float norm();
+  	float norm2();
+
   	void from_volume(Volume &other);
   	std::vector<F> to_vector();
 	void draw_slice(std::string filename, int slice);

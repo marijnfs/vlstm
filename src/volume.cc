@@ -71,6 +71,12 @@ float Volume::norm() {
 	return sqrt(result) / size();
 }
 
+float Volume::norm2() {
+	float result(0);
+	handle_error( cublasSdot(Handler::cublas(), size(), buf->data, 1, buf->data, 1, &result) );
+	return result;
+}
+
 std::vector<F> Volume::to_vector() {
 	vector<F> vec(size());
 	// cout << size() << " " << data << " ";

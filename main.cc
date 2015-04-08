@@ -97,7 +97,7 @@ int main(int argc, char **argv) {
 
 	net.finish();
 	//net.init_normal(0, .1);
-	net.init_uniform(.3);
+	net.init_uniform(.1);
 
 
 	cout << net.volumes[0]->x.shape << endl;
@@ -119,8 +119,8 @@ int main(int argc, char **argv) {
 	int rejects(0);
 
 	cout << "Starting MH" << endl;
-	// if (false) {
-	if (argc == 1) {
+	if (false) {
+	// if (argc == 1) {
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset);
 		net.input().draw_slice("img/mh_sub_input.png",0);
 		label_subset.draw_slice("img/mh_sub_label.png",0);

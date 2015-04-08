@@ -53,6 +53,7 @@ struct CudaVec {
 	CudaVec &sqrt();
 	CudaVec &abs();
 	CudaVec &clip(float limit);
+	CudaVec &add(int idx, float val);
 
 	CudaVec &operator-=(CudaVec &other);
 	CudaVec &operator+=(CudaVec &other);
@@ -62,6 +63,8 @@ struct CudaVec {
 
 	CudaVec &operator*=(float v);
 	CudaVec &operator+=(float v);
+
+
 
 };
 

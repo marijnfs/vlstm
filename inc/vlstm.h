@@ -46,7 +46,7 @@ struct LSTMOperation {
 	ConvolutionOperation<F> xi, hi; //input gate
 	ConvolutionOperation<F> xr, hr; //remember gate (forget gates dont make sense!)
 	ConvolutionOperation<F> xs, hs; //cell input
-	ConvolutionOperation<F> xo, ho, co; //output gate
+	ConvolutionOperation<F> xo, ho;//, co; //output gate
 
 	GateOperation<F>		 gate;   //for gating
 	SigmoidOperation<F> sig;

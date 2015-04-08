@@ -24,7 +24,7 @@ void FCVolumeOperation::backward_weights(VolumeSet &in, VolumeSet &out){
 	tout_err.data = out.diff.data();
 
 	op.backward_weights(tin, tout_err);
-	op.scale_grad(1.0 / (shape.z * shape.w * shape.h));
+	// op.scale_grad(1.0 / (shape.z * shape.w * shape.h));
 }
 
 void FCVolumeOperation::backward(VolumeSet &in, VolumeSet &out) {
