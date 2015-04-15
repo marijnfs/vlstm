@@ -27,6 +27,8 @@ struct VolumeNetwork {
 	Volume &input();
 	Volume &output();
 
+	VolumeShape output_shape() {return last(shapes);}
+
 	void add_vlstm(int kg, int ko, int c);
 	void add_fc(int c);
 	void add_softmax();

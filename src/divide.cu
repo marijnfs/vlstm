@@ -96,6 +96,24 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 
 }
 
+__global__ void copy_subvolume_test_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out, int xs, int ys, int zs) {
+
+	int x(threadIdx.x + blockDim.x * blockIdx.x);
+	int y(threadIdx.y + blockDim.y * blockIdx.y);
+	int z(threadIdx.z + blockDim.z * blockIdx.z);
+
+	if (x >= outshape.w || y >= outshape.h || z >= outshape.z)
+		return;
+
+	int outx = x;
+	int outy = y;
+	int outz = z;
+	int in_index = get_index(inshape.w, inshape.h, inshape.z, inshape.c, x+xs, y+ys, z+zs);
+	int out_index = get_index(outshape.w, outshape.h, outshape.z, outshape.c, outx, outy, outz);
+
+	copy_c(in + in_index, out + out_index, inshape.w * inshape.h, outshape.w * outshape.h, outshape.c);
+}
+
 void divide(Volume &from, Volume &to, int n) {
 	VolumeShape shape = from.shape;
 
@@ -145,12 +163,36 @@ void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool xfl
 	int x = Rand::randn(in.shape.w - out.shape.w + 1);
 	int y = Rand::randn(in.shape.h - out.shape.h + 1);
 	int z = Rand::randn(in.shape.z - out.shape.z + 1);
-	cout <<"copy_subvolume " << in2shape.w << " " << in2shape.h << " " << in2shape.c << endl;
-	cout <<"copy_subvolume " << x << " " << y << " " << z << endl;
+	// cout <<"copy_subvolume-inshape " << inshape.w << " " << inshape.h << " " << inshape.c << endl;
+	// cout <<"copy_subvolume-outshape " << outshape.w << " " << outshape.h << " " << outshape.c << endl;
+	cout <<"copy_subvolume-idx " << x << " " << y << " " << z << endl;
 
 	copy_subvolume_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(),
 		in2shape, out2shape, in2.data(), out2.data(), x, y, z, xflip, yflip, zflip);
 
+
+	handle_error( cudaGetLastError() );
+	handle_error( cudaDeviceSynchronize());
+}
+
+void copy_subvolume_test(Volume &in, Volume &out, int stx, int sty, int stz) {
+	VolumeShape inshape = in.shape;
+	VolumeShape outshape = out.shape;
+
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+	int const BW(32);
+	int const BH = BLOCKSIZE / BW;
+
+	dim3 dimBlock( BW, BH, 1 );
+	dim3 dimGrid( (outshape.w + BW - 1) / BW, (outshape.h + BH - 1) / BH, outshape.z );
+
+	int x = stx;
+	int y = sty;
+	int z = stz;
+	cout <<"copy_subvolume_test-idx " << x << " " << y << " " << z << endl;
+
+	copy_subvolume_test_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(), x, y, z);
 
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());

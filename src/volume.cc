@@ -84,8 +84,15 @@ std::vector<F> Volume::to_vector() {
 	return vec;
 }
 
-void Volume::draw_slice(string filename, int slice) {
+void Volume::thresholding(std::vector<F> &data, float threshold) {
+	for (auto &v : data)
+		if (v > threshold)	v = 1.0;
+		else				v = 0.0;
+}
+
+void Volume::draw_slice(string filename, int slice, float th) {
 	vector<F> data = to_vector();
+	if (th > 0.0)	thresholding(data, th);
 
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
 }
@@ -98,6 +105,9 @@ int VolumeShape::size() {
 	return z * c * w * h;
 }
 
+int VolumeShape::offset(int zz, int cc, int x, int y) {
+	return zz * c * w * h + cc * w * h + x * h + y;
+}
 
 std::ostream &operator<<(std::ostream &out, VolumeShape shape) {
 	return out << "[z:" << shape.z << " c:" << shape.c << " w:" << shape.w << " h:" << shape.h << "]";

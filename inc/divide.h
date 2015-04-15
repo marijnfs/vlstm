@@ -26,9 +26,11 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float cons
 __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out, VolumeShape in2shape, VolumeShape out2shape,
 	float *in2, float *out2, int xs, int ys, int zs, bool xflip, bool yflip, bool zflip);
 
+__global__ void copy_subvolume_test_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out, int xs, int ys, int zs);
+
 void divide(Volume &v, Volume &to, int n);
 void combine(Volume &v, Volume &to, int n);
 void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool xflip=false, bool yflip=false, bool zflip=false);
-
+void copy_subvolume_test(Volume &in, Volume &out, int stx=0, int sty=0, int stz=0);
 
 #endif

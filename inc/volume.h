@@ -15,6 +15,7 @@ struct VolumeShape {
 	int z, c, w, h;
 
 	int size();
+	int offset(int z, int c, int x, int y);
 };
 
 std::ostream &operator<<(std::ostream &out, VolumeShape shape);
@@ -34,7 +35,8 @@ struct Volume {
 
   	void from_volume(Volume &other);
   	std::vector<F> to_vector();
-	void draw_slice(std::string filename, int slice);
+  	void thresholding(std::vector<F> &data, float threshold);
+	void draw_slice(std::string filename, int slice, float th=0.0);
 	float *data();
 
 	VolumeShape shape;

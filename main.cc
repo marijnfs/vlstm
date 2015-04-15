@@ -75,10 +75,16 @@ int main(int argc, char **argv) {
 
 	VolumeNetwork net(sub_shape);
 
-	net.add_fc(8);
-	//net.add_tanh();
+	// net.add_fc(8);
+	// net.add_vlstm(7, 7, 8);
+	// net.add_fc(8);
+	// net.add_tanh();
+	// net.add_fc(2);
+	// net.add_softmax();
 
 
+	//Marijn net
+/*	net.add_fc(8);
 	net.add_vlstm(7, 7, 32);
 	net.add_fc(32);
 	net.add_tanh();
@@ -89,15 +95,43 @@ int main(int argc, char **argv) {
 	net.add_fc(32);
 	net.add_tanh();
 	net.add_fc(2);
-	//net.add_sigmoid();
+	net.add_softmax();*/
+
+	//Wonmin net
+	/*net.add_fc(16);
+	net.add_vlstm(7, 7, 16);
+	net.add_fc(25);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(45);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 64);
+	//net.add_fc(32);
+	net.add_tanh();
+	net.add_fc(2);
+	net.add_softmax();*/
+
+	//Wonmin net2
+	net.add_fc(8);
+	net.add_vlstm(7, 7, 8);
+	net.add_fc(10);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 10);
+	net.add_fc(16);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 16);
+	net.add_fc(32);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	//net.add_fc(32);
+	// net.add_tanh();
+	net.add_fc(2);
 	net.add_softmax();
-	// net.add_tanh();
-	// net.add_tanh();
-	// net.add_fc(1);
+
 
 	net.finish();
 	//net.init_normal(0, .1);
-	net.init_uniform(.1);
+	net.init_uniform(.2);
 
 
 	cout << net.volumes[0]->x.shape << endl;
@@ -120,7 +154,7 @@ int main(int argc, char **argv) {
 
 	cout << "Starting MH" << endl;
 	if (false) {
-	// if (argc == 1) {
+	//if (argc == 1) {
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset);
 		net.input().draw_slice("img/mh_sub_input.png",0);
 		label_subset.draw_slice("img/mh_sub_label.png",0);
@@ -188,7 +222,7 @@ int main(int argc, char **argv) {
 		//cout << net.output().to_vector() << endl;
 		//cout << net.param.to_vector() << endl;
 		float loss = net.calculate_loss(label_subset);
-		logger << "epoch: " << epoch << ": loss " << loss << "\n";
+		logger << "epoch: " << epoch << ": loss " << (loss / tiff_data.size()) << "\n";
 		if (loss < last_loss) {
 			last_loss = loss;
 			net.save(netname);
@@ -198,6 +232,7 @@ int main(int argc, char **argv) {
 		Timer timer;
 		net.backward();
 		cout << "backward took:" << timer.since() << "\n\n";
+		net.grad *= 1.0 / tiff_data.size();
 
 		// cout << net.grad.to_vector() << endl;
 		// net.update(.1);
@@ -213,7 +248,7 @@ int main(int argc, char **argv) {
 		//float lr = 0.001;
 		//float lr = 0.01;
 
-		float lr = epoch < 4 ? .001 : .01;
+		float lr = epoch < 4 ? .0001 : .001;
 		net.a = net.grad;
 		net.a *= net.a;
 		net.rmse *= decay;
