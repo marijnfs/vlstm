@@ -52,6 +52,8 @@ struct CudaVec {
 
 	CudaVec &sqrt();
 	CudaVec &abs();
+	CudaVec &pow(float e);
+	CudaVec &exp();
 	CudaVec &clip(float limit);
 	CudaVec &add(int idx, float val);
 
@@ -70,6 +72,8 @@ struct CudaVec {
 
 __global__ void sqrt_kernel(float *v, int n);
 __global__ void abs_kernel(float *v, int n);
+__global__ void pow_kernel(float *v, int n);
+__global__ void exp_kernel(float *v, int n);
 __global__ void clip_kernel(float *v, int n, float limit);
 
 __global__ void times_kernel(float *v, float *other, int n);

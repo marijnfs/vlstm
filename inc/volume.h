@@ -16,6 +16,8 @@ struct VolumeShape {
 
 	int size();
 	int offset(int z, int c, int x, int y);
+	int offsetrm(int z, int c, int x, int y);
+
 };
 
 std::ostream &operator<<(std::ostream &out, VolumeShape shape);

@@ -70,11 +70,11 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool binary
     }
 }
 
-inline void save_tiff(std::string name, std::vector<float> image, VolumeShape imgshape)
+inline void save_tiff(std::string name, std::vector<float> image, VolumeShape imgshape, int c = 0)
 {
 
     TIFF *out = 0;
-    int c = 1;
+    // int c = 1;
 
 
     out = TIFFOpen(name.c_str(), "w");
@@ -83,34 +83,34 @@ inline void save_tiff(std::string name, std::vector<float> image, VolumeShape im
             fprintf (stderr, "Can't open %s for writing\n", name.c_str());
     }
 
+    // imgshape.z = 1;
     for (int page = 0; page <  imgshape.z; page++)
     {
         TIFFSetField(out, TIFFTAG_IMAGEWIDTH, (uint32) imgshape.w);
         TIFFSetField(out, TIFFTAG_IMAGELENGTH, (uint32) imgshape.h);
-        TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_SEPARATE);
-        TIFFSetField(out, TIFFTAG_SAMPLESPERPIXEL, (uint16) c);
         TIFFSetField(out, TIFFTAG_BITSPERSAMPLE, (uint16) sizeof(float) * 8);
+        TIFFSetField(out, TIFFTAG_SAMPLESPERPIXEL, (uint16) 1);
+        TIFFSetField(out, TIFFTAG_PLANARCONFIG, PLANARCONFIG_CONTIG);
         TIFFSetField(out, TIFFTAG_SAMPLEFORMAT, SAMPLEFORMAT_IEEEFP);
-        uint32 rowsperstrip = TIFFDefaultStripSize(out, (uint32) imgshape.h);
-        TIFFSetField(out, TIFFTAG_ROWSPERSTRIP, rowsperstrip);
-        TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
-        TIFFSetField(out, TIFFTAG_ORIENTATION, ORIENTATION_TOPLEFT);
+        // uint32 rowsperstrip = TIFFDefaultStripSize(out, (uint32) imgshape.h);
+        // TIFFSetField(out, TIFFTAG_ROWSPERSTRIP, 1);
+        // TIFFSetField(out, TIFFTAG_COMPRESSION, COMPRESSION_NONE);
+        //TIFFSetField(out, TIFFTAG_ORIENTATION, ORIENTATION_BOTLEFT);
+        TIFFSetField(out, TIFFTAG_PHOTOMETRIC, PHOTOMETRIC_MINISBLACK);
+        TIFFSetField(out, TIFFTAG_SUBFILETYPE, FILETYPE_PAGE);
         TIFFSetField(out, TIFFTAG_PAGENUMBER, page, imgshape.z);
 
+        for (int w = 0; w < imgshape.w; w++){
+            float *line = (float *) &image[imgshape.offset(page, c, imgshape.w - w - 1, 0)];
 
-        for (int h = 0; h < imgshape.h; h++){
-
-            float *line = (float *) &image[imgshape.offset(page, 1, h, 0)];
-
-            int done = TIFFWriteScanline(out, line, (uint32) h, (tsample_t) c);
+            int done = TIFFWriteScanline(out, line, (uint32) w, (tsample_t) 0);
 
             if (done < 0) {
-                fprintf(stderr, "writeTIFF: error writing row %i\n", (int) h);
+                fprintf(stderr, "writeTIFF: error writing row %i\n", (int) w);
             }
         }
         TIFFWriteDirectory(out);
     }
-
 
     TIFFClose(out);
 }

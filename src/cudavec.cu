@@ -22,6 +22,20 @@ __global__ void abs_kernel(float *v, int n) {
 	v[x] = abs(v[x]);
 }
 
+__global__ void pow_kernel(float *v, int n, float e) {
+	int x(threadIdx.x + blockDim.x * blockIdx.x);
+	if (x >= n) return;
+
+	v[x] = pow(v[x], e);
+}
+
+__global__ void exp_kernel(float *v, int n) {
+	int x(threadIdx.x + blockDim.x * blockIdx.x);
+	if (x >= n) return;
+
+	v[x] = exp(v[x]);
+}
+
 __global__ void times_kernel(float *v, float *other, int n) {
 	int x(threadIdx.x + blockDim.x * blockIdx.x);
 	if (x >= n) return;
@@ -84,6 +98,32 @@ CudaVec &CudaVec::abs() {
 	dim3 dimGrid( (n + BLOCKSIZE - 1) / BLOCKSIZE );
 
 	abs_kernel<<<dimGrid, dimBlock>>>(data, n);
+	handle_error( cudaGetLastError() );
+	handle_error( cudaDeviceSynchronize());
+	return *this;
+}
+
+CudaVec &CudaVec::pow(float e) {
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+
+	dim3 dimBlock( BLOCKSIZE );
+	dim3 dimGrid( (n + BLOCKSIZE - 1) / BLOCKSIZE );
+
+	pow_kernel<<<dimGrid, dimBlock>>>(data, n, e);
+	handle_error( cudaGetLastError() );
+	handle_error( cudaDeviceSynchronize());
+	return *this;
+}
+
+CudaVec &CudaVec::exp() {
+	//primitive blocksize determination
+	int const BLOCKSIZE(1024);
+
+	dim3 dimBlock( BLOCKSIZE );
+	dim3 dimGrid( (n + BLOCKSIZE - 1) / BLOCKSIZE );
+
+	exp_kernel<<<dimGrid, dimBlock>>>(data, n);
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
 	return *this;

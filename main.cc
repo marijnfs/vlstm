@@ -112,17 +112,14 @@ int main(int argc, char **argv) {
 	net.add_softmax();*/
 
 	//Wonmin net2
-	net.add_fc(8);
-	net.add_vlstm(7, 7, 8);
-	net.add_fc(10);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 10);
-	net.add_fc(16);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 16);
 	net.add_fc(32);
-	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
+	net.add_fc(45);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 64);
+	net.add_fc(80);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 100);
 	//net.add_fc(32);
 	// net.add_tanh();
 	net.add_fc(2);
@@ -153,8 +150,8 @@ int main(int argc, char **argv) {
 	int rejects(0);
 
 	cout << "Starting MH" << endl;
-	if (false) {
-	//if (argc == 1) {
+	// if (false) {
+	if (argc == 1) {
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset);
 		net.input().draw_slice("img/mh_sub_input.png",0);
 		label_subset.draw_slice("img/mh_sub_label.png",0);

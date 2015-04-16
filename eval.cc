@@ -38,18 +38,13 @@ int main(int argc, char **argv) {
 
 	VolumeShape data_shape = tiff_data.shape;
 	VolumeShape sub_shape = tiff_data.shape;
-	int nstep_x = 2;
-	int nstep_y = 2;
-	int nstep_z = 2;
 
-	// Volume in_data(shape);
-	// Volume out_data(shape);
-
-	// in_data.init_normal(0, .5);
-	// out_data.init_normal(0, .5);
 	sub_shape.w = 256;
 	sub_shape.h = 256;
 	sub_shape.z = 25;
+	int nstep_x = 6;
+	int nstep_y = 6;
+	int nstep_z = 2;
 
 	VolumeShape stepsize = VolumeShape{data_shape.z - sub_shape.z, 1, data_shape.w - sub_shape.w, data_shape.h - sub_shape.h};
 	stepsize.w = ((stepsize.w % nstep_x) ? 1 : 0) + stepsize.w / (nstep_x - 1);
@@ -94,8 +89,9 @@ int main(int argc, char **argv) {
 	//net.init_uniform(.1);
 
 
-	vector<float> final_output(data_shape.z * net.output_shape().c * data_shape.w * data_shape.h);
-	vector<int> final_count(data_shape.z * net.output_shape().c * data_shape.w * data_shape.h);
+	VolumeShape out_shape = VolumeShape{data_shape.z, net.output_shape().c, data_shape.w, data_shape.h};
+	vector<float> final_output(out_shape.size());
+	vector<int> final_count(out_shape.size());
 
 	cout << net.volumes[0]->x.shape << endl;
 	cout << tiff_data.shape << endl;
@@ -117,11 +113,12 @@ int main(int argc, char **argv) {
 				vector<float>::iterator net_output_it(net_output.begin());
 
 				for(int z2(0); z2 < sub_shape.z; z2++) {
-					for(int c2(0); c2 < sub_shape.c; c2++) {
+					for(int c2(0); c2 < out_shape.c; c2++) {
 						for(int x2(0); x2 < sub_shape.w; x2++) {
 							for(int y2(0); y2 < sub_shape.h; y2++, ++net_output_it){
-								vector<float>::iterator final_output_it(final_output.begin() + data_shape.offset(idxz + z2, c2, idxy + y2, idxx + x2));
-								vector<int>::iterator final_count_it(final_count.begin() + data_shape.offset(idxz + z2, c2, idxy + y2, idxx + x2));
+
+								vector<float>::iterator final_output_it(final_output.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
+								vector<int>::iterator final_count_it(final_count.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
 								*final_output_it += *net_output_it;
 								*final_count_it += 1;
 							}
@@ -138,10 +135,11 @@ int main(int argc, char **argv) {
 	vector<int>::iterator final_count_it(final_count.begin());
 	for (; final_output_it != final_output_end; ++final_output_it, ++final_count_it)
 		*final_output_it /= *final_count_it;
+		// *final_output_it = rand_float();
 
 	cudaDeviceSynchronize();
 
-	save_tiff("result.tiff", final_output, data_shape);
+	save_tiff("result.tiff", final_output, out_shape, 1);
 
 	// int i(0);
 	// for ( int i(0); i < net.output().shape.z; i++) {

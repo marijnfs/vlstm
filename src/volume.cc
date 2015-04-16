@@ -109,6 +109,10 @@ int VolumeShape::offset(int zz, int cc, int x, int y) {
 	return zz * c * w * h + cc * w * h + x * h + y;
 }
 
+int VolumeShape::offsetrm(int zz, int cc, int x, int y) {
+	return zz * c * w * h + cc * w * h + y * w + x;
+}
+
 std::ostream &operator<<(std::ostream &out, VolumeShape shape) {
 	return out << "[z:" << shape.z << " c:" << shape.c << " w:" << shape.w << " h:" << shape.h << "]";
 }
