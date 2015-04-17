@@ -67,9 +67,16 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	sub_shape.w = 256;
-	sub_shape.h = 256;
+	// sub_shape.w = 256;
+	// sub_shape.h = 256;
+	// sub_shape.z = 16;
+	// sub_shape.w = 32;
+	// sub_shape.h = 32;
+	// sub_shape.z = 16;
+	sub_shape.w = 128;
+	sub_shape.h = 128;
 	sub_shape.z = 16;
+
 	//We need a volume for sub targets
 	Volume label_subset(VolumeShape{sub_shape.z, tiff_label.shape.c, sub_shape.w, sub_shape.h});
 
@@ -98,7 +105,7 @@ int main(int argc, char **argv) {
 	net.add_softmax();*/
 
 	//Wonmin net
-	/*net.add_fc(16);
+	net.add_fc(16);
 	net.add_vlstm(7, 7, 16);
 	net.add_fc(25);
 	net.add_tanh();
@@ -107,28 +114,28 @@ int main(int argc, char **argv) {
 	net.add_tanh();
 	net.add_vlstm(7, 7, 64);
 	//net.add_fc(32);
-	net.add_tanh();
-	net.add_fc(2);
-	net.add_softmax();*/
-
-	//Wonmin net2
-	net.add_fc(32);
-	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 64);
-	net.add_fc(80);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 100);
-	//net.add_fc(32);
 	// net.add_tanh();
 	net.add_fc(2);
 	net.add_softmax();
 
+	//Wonmin net2
+	// net.add_fc(32);
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(45);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 64);
+	// net.add_fc(80);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 100);
+	// //net.add_fc(32);
+	// // net.add_tanh();
+	// net.add_fc(2);
+	// net.add_softmax();
+
 
 	net.finish();
 	//net.init_normal(0, .1);
-	net.init_uniform(.2);
+	net.init_uniform(.1);
 
 
 	cout << net.volumes[0]->x.shape << endl;
@@ -150,21 +157,27 @@ int main(int argc, char **argv) {
 	int rejects(0);
 
 	cout << "Starting MH" << endl;
-	// if (false) {
-	if (argc == 1) {
+	if (false) {
+	// if (argc == 1) {
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset);
 		net.input().draw_slice("img/mh_sub_input.png",0);
 		label_subset.draw_slice("img/mh_sub_label.png",0);
+
+		net.e += .01;
+
 		while (true) {
-			static float SIGMA = 0.000015;
+			static float SIGMA = 0.005;
 			static float SIGMA_DECAY = pow(.5, 1.0 / 50);
 			static float last_loss = 9999999;
-			if (rand_float() > .5)
-				net.a.init_normal(0, 0.05);
-			else
-				net.a.init_normal(0, 0.005);
+
+
+			net.a.init_normal(0, 1.0);
 			net.b = net.param;
-			net.param += net.a;
+			net.c = net.a;
+			net.c *= net.e;
+
+			net.param += net.c;
+
 
 			net.forward();
 			ostringstream oss;
@@ -172,13 +185,21 @@ int main(int argc, char **argv) {
 			net.output().draw_slice(oss.str(), 3);
 			//cout << net.output().to_vector() << endl;
 			//cout << net.param.to_vector() << endl;
-			float loss = net.calculate_loss(label_subset);
+			float loss = net.calculate_loss(label_subset) / sub_shape.size();
 			logger << "epoch: " << epoch << ": loss " << loss << "\n";
 
 			if (loss < last_loss || (exp(-loss/SIGMA) / exp(-last_loss/SIGMA)) > rand_float()) {
 				last_loss = loss;
 				cout << "accept" << endl;
 				rejects = 0;
+				net.a.pow(2.0);
+				net.a += -1.;
+				net.a *= .1; //LR
+				net.a.exp();
+				net.e *= net.a;
+				// cout << "new vec: " << net.e.to_vector() << endl;
+
+				net.save(netname);
 			}
 			else{
 				net.param = net.b;
@@ -190,7 +211,6 @@ int main(int argc, char **argv) {
 			SIGMA *= SIGMA_DECAY;
 			cout << "sigma: " << SIGMA << endl;
 			++epoch;
-			net.save(netname);
 		}
 	}
 
@@ -219,7 +239,7 @@ int main(int argc, char **argv) {
 		//cout << net.output().to_vector() << endl;
 		//cout << net.param.to_vector() << endl;
 		float loss = net.calculate_loss(label_subset);
-		logger << "epoch: " << epoch << ": loss " << (loss / tiff_data.size()) << "\n";
+		logger << "epoch: " << epoch << ": loss " << (loss / sub_shape.size()) << "\n";
 		if (loss < last_loss) {
 			last_loss = loss;
 			net.save(netname);
@@ -245,7 +265,8 @@ int main(int argc, char **argv) {
 		//float lr = 0.001;
 		//float lr = 0.01;
 
-		float lr = epoch < 4 ? .0001 : .001;
+		// float lr = epoch < 4 ? .0001 : .001;
+		float lr = .004;
 		net.a = net.grad;
 		net.a *= net.a;
 		net.rmse *= decay;
