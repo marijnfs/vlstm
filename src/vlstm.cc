@@ -22,8 +22,8 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 	vin = volumes["x"];
 	vout = volumes["h"];
 
-	//xr.bias.init_normal(1.0, 0.0);
-	//xi.bias.init_normal(1.0, 0.0);
+	xr.bias.init_normal(1., 0.0);
+	xi.bias.init_normal(1., 0.0);
 }
 
 

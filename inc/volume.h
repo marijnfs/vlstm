@@ -29,6 +29,7 @@ struct Volume {
 	float *slice(int z);
 	TensorShape slice_shape();
 	void zero();
+	void rand_zero(float p);
 	void init_normal(F mean, F std);
 	void fill(F val);
   	int size();
@@ -39,6 +40,7 @@ struct Volume {
   	std::vector<F> to_vector();
   	void thresholding(std::vector<F> &data, float threshold);
 	void draw_slice(std::string filename, int slice, float th=0.0);
+	void dropout(float p);
 	float *data();
 
 	VolumeShape shape;

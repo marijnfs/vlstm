@@ -36,6 +36,11 @@ void Volume::zero() {
 	buf->zero();
 }
 
+void Volume::rand_zero(float p) {
+	buf->rand_zero(p);
+}
+
+
 void Volume::init_normal(F mean, F std) {
 	// size_t even_size(((size() + 1) / 2) * 2);
 	// zero();
@@ -97,9 +102,14 @@ void Volume::draw_slice(string filename, int slice, float th) {
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
 }
 
+void Volume::dropout(float p) {
+	buf->rand_zero(p);
+}
+
 float *Volume::data() {
 	return buf->data;
 }
+
 
 int VolumeShape::size() {
 	return z * c * w * h;

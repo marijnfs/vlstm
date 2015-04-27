@@ -3,20 +3,22 @@
 
 using namespace std;
 
-FCVolumeOperation::FCVolumeOperation(VolumeShape shape_, int in_map, int out_map) :
+FCVolumeOperation::FCVolumeOperation(VolumeShape shape_, int in_map, int out_map, float dropout_) :
 	op(in_map, out_map, 1, 1),
 	c(out_map),
 	shape(shape_),
 	tin(shape_.z, in_map, shape_.w, shape_.h, 0),
 	tout(shape_.z, out_map, shape_.w, shape_.h, 0),
 	tin_err(shape_.z, in_map, shape_.w, shape_.h, 0),
-	tout_err(shape_.z, out_map, shape_.w, shape_.h, 0)
+	tout_err(shape_.z, out_map, shape_.w, shape_.h, 0),
+	dropout(dropout_)
 {}
 
 void FCVolumeOperation::forward(Volume &in, Volume &out)  {
 	tin.data = in.data();
 	tout.data = out.data();
 	op.forward(tin, tout);
+	if(dropout>0.0) out.dropout(dropout);
 }
 
 void FCVolumeOperation::backward_weights(VolumeSet &in, VolumeSet &out){

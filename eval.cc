@@ -41,7 +41,7 @@ int main(int argc, char **argv) {
 
 	sub_shape.w = 256;
 	sub_shape.h = 256;
-	sub_shape.z = 25;
+	sub_shape.z = 15;
 	int nstep_x = 6;
 	int nstep_y = 6;
 	int nstep_z = 2;
@@ -69,7 +69,7 @@ int main(int argc, char **argv) {
 	net.add_fc(2);
 	net.add_softmax();*/
 
-	//Wonmin net
+	// //Wonmin net
 	net.add_fc(16);
 	net.add_vlstm(7, 7, 16);
 	net.add_fc(25);
@@ -83,6 +83,20 @@ int main(int argc, char **argv) {
 	net.add_fc(2);
 	net.add_softmax();
 
+	//Wonmin net2
+/*	net.add_fc(32);
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(45);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 64);
+	net.add_fc(80);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 100);
+	//net.add_fc(32);
+	// net.add_tanh();
+	net.add_fc(2);
+	net.add_softmax();
+*/
 	net.finish();
 	//net.init_normal(0, .1);
 	net.load(argv[1]);
@@ -142,7 +156,7 @@ int main(int argc, char **argv) {
 
 	cudaDeviceSynchronize();
 
-	save_tiff("result.tiff", final_output, out_shape, 1);
+	save_tiff(argv[3], final_output, out_shape, 1);
 
 	// int i(0);
 	// for ( int i(0); i < net.output().shape.z; i++) {

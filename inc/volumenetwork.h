@@ -30,7 +30,7 @@ struct VolumeNetwork {
 	VolumeShape output_shape() {return last(shapes);}
 
 	void add_vlstm(int kg, int ko, int c);
-	void add_fc(int c);
+	void add_fc(int c, float dropout=0.0);
 	void add_softmax();
 	void add_tanh();
 	void add_sigmoid();

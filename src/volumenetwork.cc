@@ -144,9 +144,9 @@ void VolumeNetwork::add_vlstm(int kg, int ko, int c) {
 	volumes.push_back(new VolumeSet(shape));
 }
 
-void VolumeNetwork::add_fc(int c) {
+void VolumeNetwork::add_fc(int c, float dropout) {
 	cout << "adding fc" << endl;
-	auto fc = new FCVolumeOperation(last(shapes), last(shapes).c, c);
+	auto fc = new FCVolumeOperation(last(shapes), last(shapes).c, c, dropout);
 	auto shape = fc->output_shape(last(shapes));
 	operations.push_back(fc);
 	shapes.push_back(shape);

@@ -1,6 +1,8 @@
 #include "divide.h"
 #include "util.h"
 #include "rand.h"
+//#include "util/cuPrintf.cuh"
+// #include "util/cuPrintf.cu"
 
 using namespace std;
 
@@ -73,7 +75,7 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float cons
 
 __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out,
 	VolumeShape in2shape, VolumeShape out2shape,
-	float *in2, float *out2, int xs, int ys, int zs, bool xflip, bool yflip, bool zflip) {
+	float *in2, float *out2, int xs, int ys, int zs, bool xflip, bool yflip, bool zflip, float deg, bool *succ){
 
 	int x(threadIdx.x + blockDim.x * blockIdx.x);
 	int y(threadIdx.y + blockDim.y * blockIdx.y);
@@ -82,18 +84,40 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 	if (x >= outshape.w || y >= outshape.h || z >= outshape.z)
 		return;
 
+	/// rotation
+	int xnew, ynew;
+	if (deg >= 0.0){
+		int xc = inshape.w - inshape.w/2;
+	    int yc = inshape.h - inshape.h/2;
+
+	    xnew = ((float)(xs+x)-xc)*cos(deg) - ((float)(ys+y)-yc)*sin(deg) + xc;
+	    ynew = ((float)(xs+x)-xc)*sin(deg) + ((float)(ys+y)-yc)*cos(deg) + yc;
+
+	    if (xnew >= 0 && xnew < inshape.w && ynew >= 0 && ynew < inshape.h){
+	        *succ = true;
+	    }
+	    else{
+	    	*succ = false;
+	    	return;
+	    }
+	}
+	else{
+		xnew = xs+x;
+		ynew = ys+y;
+		*succ = true;
+	}
+
 	int outx = xflip ? (outshape.w - 1 - x) : x;
 	int outy = yflip ? (outshape.h - 1 - y) : y;
 	int outz = zflip ? (outshape.z - 1 - z) : z;
-	int in_index = get_index(inshape.w, inshape.h, inshape.z, inshape.c, x+xs, y+ys, z+zs);
-	int in2_index = get_index(in2shape.w, in2shape.h, in2shape.z, in2shape.c, x+xs, y+ys, z+zs);
+
+	int in_index = get_index(inshape.w, inshape.h, inshape.z, inshape.c, xnew, ynew, z+zs);
+	int in2_index = get_index(in2shape.w, in2shape.h, in2shape.z, in2shape.c, xnew, ynew, z+zs);
 	int out_index = get_index(outshape.w, outshape.h, outshape.z, outshape.c, outx, outy, outz);
 	int out2_index = get_index(out2shape.w, out2shape.h, out2shape.z, out2shape.c, outx, outy, outz);
 
 	copy_c(in + in_index, out + out_index, inshape.w * inshape.h, outshape.w * outshape.h, outshape.c);
 	copy_c(in2 + in2_index, out2 + out2_index, in2shape.w * in2shape.h, out2shape.w * out2shape.h, out2shape.c);
-
-
 }
 
 __global__ void copy_subvolume_test_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out, int xs, int ys, int zs) {
@@ -146,7 +170,7 @@ void combine(Volume &from, Volume &to, int n) {
 	handle_error( cudaDeviceSynchronize());
 }
 
-void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool xflip, bool yflip, bool zflip) {
+void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool rotate, bool xflip, bool yflip, bool zflip) {
 	VolumeShape inshape = in.shape;
 	VolumeShape outshape = out.shape;
 	VolumeShape in2shape = in2.shape;
@@ -160,19 +184,28 @@ void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool xfl
 	dim3 dimBlock( BW, BH, 1 );
 	dim3 dimGrid( (outshape.w + BW - 1) / BW, (outshape.h + BH - 1) / BH, outshape.z );
 
-	int x = Rand::randn(in.shape.w - out.shape.w + 1);
-	int y = Rand::randn(in.shape.h - out.shape.h + 1);
-	int z = Rand::randn(in.shape.z - out.shape.z + 1);
-	// cout <<"copy_subvolume-inshape " << inshape.w << " " << inshape.h << " " << inshape.c << endl;
-	// cout <<"copy_subvolume-outshape " << outshape.w << " " << outshape.h << " " << outshape.c << endl;
-	cout <<"copy_subvolume-idx " << x << " " << y << " " << z << endl;
+	bool succeed = false;
+	while (!succeed){
+		int x = Rand::randn(in.shape.w - out.shape.w + 1);
+		int y = Rand::randn(in.shape.h - out.shape.h + 1);
+		int z = Rand::randn(in.shape.z - out.shape.z + 1);
+		float deg = rotate ? rand_float() : -1.0;
 
-	copy_subvolume_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(),
-		in2shape, out2shape, in2.data(), out2.data(), x, y, z, xflip, yflip, zflip);
+		cout <<"copy_subvolume-idx: " << x << " " << y << " " << z <<  " / deg: " << deg << endl;
+		bool *succ;
+		cudaMalloc( (void**)&succ, sizeof(int) );
 
+		copy_subvolume_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(),
+			in2shape, out2shape, in2.data(), out2.data(), x, y, z, xflip, yflip, zflip, deg, succ);
+		cudaMemcpy( &succeed, succ, sizeof(bool), cudaMemcpyDeviceToHost );
+		cudaFree( succ );
+		cout << "	rotation succeed: " << succeed << "\n";
+
+	}
 
 	handle_error( cudaGetLastError() );
 	handle_error( cudaDeviceSynchronize());
+
 }
 
 void copy_subvolume_test(Volume &in, Volume &out, int stx, int sty, int stz) {

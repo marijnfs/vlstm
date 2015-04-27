@@ -64,6 +64,11 @@ __global__ void add_scalarf(float *v, float other, int n) {
 	v[x] += other;
 }
 
+void CudaVec::rand_zero(float p) {
+	::rand_zero(data, n, p);
+}
+
+
 CudaVec &CudaVec::sqrt() {
 	//primitive blocksize determination
 	int const BLOCKSIZE(1024);

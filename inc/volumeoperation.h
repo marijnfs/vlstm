@@ -20,7 +20,7 @@ struct VolumeOperation {
 };
 
 struct FCVolumeOperation : public VolumeOperation {
-	FCVolumeOperation(VolumeShape shape, int in_map, int out_map);
+	FCVolumeOperation(VolumeShape shape, int in_map, int out_map, float dropout);
 
 	void forward(Volume &in, Volume &out);
 	void backward_weights(VolumeSet &in, VolumeSet &out);
@@ -39,6 +39,7 @@ struct FCVolumeOperation : public VolumeOperation {
 	int c;
 	Tensor<F> tin, tout;
 	Tensor<F> tin_err, tout_err;
+	float dropout=0.0;
 };
 
 struct SoftmaxVolumeOperation : public VolumeOperation {

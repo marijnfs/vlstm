@@ -67,15 +67,15 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	// sub_shape.w = 256;
-	// sub_shape.h = 256;
-	// sub_shape.z = 16;
+	sub_shape.w = 64;
+	sub_shape.h = 64;
+	sub_shape.z = 8;
 	// sub_shape.w = 32;
 	// sub_shape.h = 32;
 	// sub_shape.z = 16;
-	sub_shape.w = 128;
-	sub_shape.h = 128;
-	sub_shape.z = 16;
+	// sub_shape.w = 256;
+	// sub_shape.h = 256;
+	// sub_shape.z = 8;
 
 	//We need a volume for sub targets
 	Volume label_subset(VolumeShape{sub_shape.z, tiff_label.shape.c, sub_shape.w, sub_shape.h});
@@ -119,18 +119,18 @@ int main(int argc, char **argv) {
 	net.add_softmax();
 
 	//Wonmin net2
-	// net.add_fc(32);
-	// net.add_vlstm(7, 7, 32);
-	// net.add_fc(45);
+	/*net.add_fc(32);
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(45);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 64);
+	net.add_fc(80);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 100);
+	//net.add_fc(32);
 	// net.add_tanh();
-	// net.add_vlstm(7, 7, 64);
-	// net.add_fc(80);
-	// net.add_tanh();
-	// net.add_vlstm(7, 7, 100);
-	// //net.add_fc(32);
-	// // net.add_tanh();
-	// net.add_fc(2);
-	// net.add_softmax();
+	net.add_fc(2);
+	net.add_softmax();*/
 
 
 	net.finish();
@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
 	}
 
 	logger << "begin description\n";
+	logger << "subvolume shape " << sub_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
 
@@ -223,8 +224,13 @@ int main(int argc, char **argv) {
 	while (true) {
 		ostringstream ose;
 		ose << "img/mom_sub_in-" << epoch << ".png";
-		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, rand()%2, rand()%2, rand()%2);
+		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, rand()%2, rand()%2, rand()%2, rand()%2);
+
+		//copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, true);
 		net.input().draw_slice(ose.str(),0);
+		net.input().rand_zero(.2);
+
+		// return 1;
 		ostringstream osse;
 		osse << "img/mom_sub_label-" << epoch << ".png";
 		label_subset.draw_slice(osse.str(),0);
@@ -266,7 +272,7 @@ int main(int argc, char **argv) {
 		//float lr = 0.01;
 
 		// float lr = epoch < 4 ? .0001 : .001;
-		float lr = .004;
+		float lr = .001;
 		net.a = net.grad;
 		net.a *= net.a;
 		net.rmse *= decay;

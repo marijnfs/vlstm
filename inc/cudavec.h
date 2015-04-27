@@ -30,6 +30,8 @@ struct CudaVec {
 		return *this;
 	}
 
+	void rand_zero(float p);
+
 	void zero() {
 		handle_error( cudaMemset(data, 0, sizeof(float) * n) );
 	}
