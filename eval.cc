@@ -9,6 +9,8 @@
 #include "tiff.h"
 #include "log.h"
 #include "divide.h"
+#include "global.h"
+
 
 using namespace std;
 
@@ -19,6 +21,7 @@ void print_last(vector<float> vals, int n) {
 }
 
 int main(int argc, char **argv) {
+  Global::validation() = true;
 	if (argc < 4) {
 		cout << "usage: eval [net] [in] [out]" << endl;
 		return 1;
@@ -39,9 +42,9 @@ int main(int argc, char **argv) {
 	VolumeShape data_shape = tiff_data.shape;
 	VolumeShape sub_shape = tiff_data.shape;
 
-	sub_shape.w = 256;
-	sub_shape.h = 256;
-	sub_shape.z = 15;
+	sub_shape.w = 128;
+	sub_shape.h = 128;
+	sub_shape.z = 8;
 	int nstep_x = 6;
 	int nstep_y = 6;
 	int nstep_z = 2;
@@ -69,34 +72,34 @@ int main(int argc, char **argv) {
 	net.add_fc(2);
 	net.add_softmax();*/
 
-	// //Wonmin net
-	net.add_fc(16);
-	net.add_vlstm(7, 7, 16);
-	net.add_fc(25);
-	net.add_tanh();
+	// // //Wonmin net
+	// net.add_fc(16);
+	// net.add_vlstm(7, 7, 16);
+	// net.add_fc(25);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(45);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 64);
+	// //net.add_fc(32);
+	// // net.add_tanh();
+	// net.add_fc(2);
+	// net.add_softmax();
+
+	//Wonmin net2
+	net.add_fc(32);
 	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
+	net.add_fc(64, .5);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 64);
-	//net.add_fc(32);
-	// net.add_tanh();
+	net.add_fc(128, .5);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 128);
+	net.add_fc(256, .5);
+	net.add_tanh();
 	net.add_fc(2);
 	net.add_softmax();
 
-	//Wonmin net2
-/*	net.add_fc(32);
-	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 64);
-	net.add_fc(80);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 100);
-	//net.add_fc(32);
-	// net.add_tanh();
-	net.add_fc(2);
-	net.add_softmax();
-*/
 	net.finish();
 	//net.init_normal(0, .1);
 	net.load(argv[1]);
@@ -118,6 +121,7 @@ int main(int argc, char **argv) {
 				int idxy = min(y * stepsize.h, data_shape.h - sub_shape.h);
 				int idxz = min(z * stepsize.z, data_shape.z - sub_shape.z);
 				copy_subvolume_test(tiff_data, net.input(), idxx, idxy, idxz);
+				(*net.input().buf) *= .8;
 
 				Timer ftimer;
 				net.forward();

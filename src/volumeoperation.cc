@@ -1,5 +1,6 @@
 #include "volumeoperation.h"
 #include "vlstm.h"
+#include "global.h"
 
 using namespace std;
 
@@ -18,7 +19,12 @@ void FCVolumeOperation::forward(Volume &in, Volume &out)  {
 	tin.data = in.data();
 	tout.data = out.data();
 	op.forward(tin, tout);
-	if(dropout>0.0) out.dropout(dropout);
+	if(dropout>0.0) {
+	  if (Global::validation())
+	    (*out.buf) *= 1.0 - dropout;
+	  else
+	    out.dropout(dropout);
+	}
 }
 
 void FCVolumeOperation::backward_weights(VolumeSet &in, VolumeSet &out){

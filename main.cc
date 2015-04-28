@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	sub_shape.w = 64;
-	sub_shape.h = 64;
+	sub_shape.w = 32;
+	sub_shape.h = 32;
 	sub_shape.z = 8;
 	// sub_shape.w = 32;
 	// sub_shape.h = 32;
@@ -105,32 +105,32 @@ int main(int argc, char **argv) {
 	net.add_softmax();*/
 
 	//Wonmin net
-	net.add_fc(16);
-	net.add_vlstm(7, 7, 16);
-	net.add_fc(25);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 64);
-	//net.add_fc(32);
+	// net.add_fc(16);
+	// net.add_vlstm(7, 7, 16);
+	// net.add_fc(25);
 	// net.add_tanh();
-	net.add_fc(2);
-	net.add_softmax();
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(45);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 64);
+	// //net.add_fc(32);
+	// // net.add_tanh();
+	// net.add_fc(2);
+	// net.add_softmax();
 
 	//Wonmin net2
-	/*net.add_fc(32);
+	net.add_fc(32);
 	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
+	net.add_fc(64, .5);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 64);
-	net.add_fc(80);
+	net.add_fc(128, .5);
 	net.add_tanh();
-	net.add_vlstm(7, 7, 100);
-	//net.add_fc(32);
-	// net.add_tanh();
+	net.add_vlstm(7, 7, 128);
+	net.add_fc(256, .5);
+	net.add_tanh();
 	net.add_fc(2);
-	net.add_softmax();*/
+	net.add_softmax();
 
 
 	net.finish();
@@ -219,7 +219,8 @@ int main(int argc, char **argv) {
 	epoch = 0;
 	float last_loss = 9999999.;
 
-	// float const LR_DECAY = pow(.5, 1.0 / 200);
+	float base_lr = .01;
+	float const LR_DECAY = pow(.5, 1.0 / 200);
 
 	while (true) {
 		ostringstream ose;
@@ -227,8 +228,8 @@ int main(int argc, char **argv) {
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, rand()%2, rand()%2, rand()%2, rand()%2);
 
 		//copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, true);
-		net.input().draw_slice(ose.str(),0);
 		net.input().rand_zero(.2);
+		net.input().draw_slice(ose.str(),0);
 
 		// return 1;
 		ostringstream osse;
@@ -247,7 +248,7 @@ int main(int argc, char **argv) {
 		float loss = net.calculate_loss(label_subset);
 		logger << "epoch: " << epoch << ": loss " << (loss / sub_shape.size()) << "\n";
 		if (loss < last_loss) {
-			last_loss = loss;
+			last_lo ss = loss;
 			net.save(netname);
 
 		}
@@ -272,7 +273,9 @@ int main(int argc, char **argv) {
 		//float lr = 0.01;
 
 		// float lr = epoch < 4 ? .0001 : .001;
-		float lr = .001;
+
+		float lr = .001 + base_lr;
+		base_lr *= LR_DECAY;
 		net.a = net.grad;
 		net.a *= net.a;
 		net.rmse *= decay;
