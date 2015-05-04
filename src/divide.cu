@@ -85,7 +85,7 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 		return;
 
 	/// rotation
-	int xnew, ynew;
+	int xnew(0), ynew(0);
 	if (deg >= 0.0){
 		int xc = inshape.w - inshape.w/2;
 	    int yc = inshape.h - inshape.h/2;
@@ -186,10 +186,10 @@ void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool rot
 
 	bool succeed = false;
 	while (!succeed){
-		int x = Rand::randn(in.shape.w - out.shape.w + 1);
+	        int x = Rand::randn(in.shape.w - out.shape.w + 1);
 		int y = Rand::randn(in.shape.h - out.shape.h + 1);
 		int z = Rand::randn(in.shape.z - out.shape.z + 1);
-		float deg = rotate ? rand_float() : -1.0;
+		float deg = rotate ? rand_float() * 3.14 * .5 : -1.0;
 
 		cout <<"copy_subvolume-idx: " << x << " " << y << " " << z <<  " / deg: " << deg << endl;
 		bool *succ;

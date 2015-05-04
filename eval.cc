@@ -45,9 +45,9 @@ int main(int argc, char **argv) {
 	sub_shape.w = 128;
 	sub_shape.h = 128;
 	sub_shape.z = 8;
-	int nstep_x = 6;
-	int nstep_y = 6;
-	int nstep_z = 2;
+	int nstep_x = 4;
+	int nstep_y = 4;
+	int nstep_z = 4;
 
 	VolumeShape stepsize = VolumeShape{data_shape.z - sub_shape.z, 1, data_shape.w - sub_shape.w, data_shape.h - sub_shape.h};
 	stepsize.w = ((stepsize.w % nstep_x) ? 1 : 0) + stepsize.w / (nstep_x - 1);
@@ -114,6 +114,7 @@ int main(int argc, char **argv) {
 	cout << tiff_data.shape << endl;
 	// net.set_input(tiff_data);
 
+	bool bla(false);
 	for(int z(0); z < nstep_z; z++){
 		for(int y(0); y < nstep_y; y++){
 			for(int x(0); x < nstep_x; x++){
@@ -122,6 +123,7 @@ int main(int argc, char **argv) {
 				int idxz = min(z * stepsize.z, data_shape.z - sub_shape.z);
 				copy_subvolume_test(tiff_data, net.input(), idxx, idxy, idxz);
 				(*net.input().buf) *= .8;
+				net.input().draw_slice("jemoeder.png",0);
 
 				Timer ftimer;
 				net.forward();
@@ -155,7 +157,7 @@ int main(int argc, char **argv) {
 	vector<float>::iterator final_output_it(final_output.begin()), final_output_end(final_output.end());
 	vector<float>::iterator final_count_it(final_count.begin());
 	for (; final_output_it != final_output_end; ++final_output_it, ++final_count_it)
-		*final_output_it /= *final_count_it;
+	  *final_output_it /= (*final_count_it) + .00001;
 		// *final_output_it = rand_float();
 
 	cudaDeviceSynchronize();

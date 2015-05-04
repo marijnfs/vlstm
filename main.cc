@@ -67,8 +67,8 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	sub_shape.w = 32;
-	sub_shape.h = 32;
+	sub_shape.w = 128;
+	sub_shape.h = 128;
 	sub_shape.z = 8;
 	// sub_shape.w = 32;
 	// sub_shape.h = 32;
@@ -120,6 +120,7 @@ int main(int argc, char **argv) {
 
 	//Wonmin net2
 	net.add_fc(32);
+
 	net.add_vlstm(7, 7, 32);
 	net.add_fc(64, .5);
 	net.add_tanh();
@@ -219,7 +220,7 @@ int main(int argc, char **argv) {
 	epoch = 0;
 	float last_loss = 9999999.;
 
-	float base_lr = .01;
+	float base_lr = .005;
 	float const LR_DECAY = pow(.5, 1.0 / 200);
 
 	while (true) {
@@ -247,11 +248,11 @@ int main(int argc, char **argv) {
 		//cout << net.param.to_vector() << endl;
 		float loss = net.calculate_loss(label_subset);
 		logger << "epoch: " << epoch << ": loss " << (loss / sub_shape.size()) << "\n";
-		if (loss < last_loss) {
-			last_lo ss = loss;
-			net.save(netname);
+		//if (loss < last_loss) {
+		last_loss = loss;
+		net.save(netname);
 
-		}
+		//}
 
 		Timer timer;
 		net.backward();
