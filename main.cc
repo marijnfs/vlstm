@@ -20,9 +20,11 @@ void print_last(vector<float> vals, int n) {
 
 int main(int argc, char **argv) {
 	//VolumeShape shape{100, 1, 512, 512};
-	Handler::set_device(0);
+	Handler::set_device(2);
 
 
+	string img_path = "img-nodrop/";
+	
 	string ds = date_string();
 	ostringstream oss;
 	oss << "log/result-" << ds << ".log";
@@ -120,7 +122,7 @@ int main(int argc, char **argv) {
 
 	//Wonmin net2
 	net.add_fc(32);
-
+	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
 	net.add_fc(64, .5);
 	net.add_tanh();
@@ -162,8 +164,8 @@ int main(int argc, char **argv) {
 	if (false) {
 	// if (argc == 1) {
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset);
-		net.input().draw_slice("img/mh_sub_input.png",0);
-		label_subset.draw_slice("img/mh_sub_label.png",0);
+		net.input().draw_slice(img_path + "mh_sub_input.png",0);
+		label_subset.draw_slice(img_path + "mh_sub_label.png",0);
 
 		net.e += .01;
 
@@ -183,7 +185,7 @@ int main(int argc, char **argv) {
 
 			net.forward();
 			ostringstream oss;
-			oss << "img/mh-" << epoch << ".png";
+			oss << img_path << "mh-" << epoch << ".png";
 			net.output().draw_slice(oss.str(), 3);
 			//cout << net.output().to_vector() << endl;
 			//cout << net.param.to_vector() << endl;
@@ -223,18 +225,24 @@ int main(int argc, char **argv) {
 	float base_lr = .005;
 	float const LR_DECAY = pow(.5, 1.0 / 200);
 
+	int n_sums(50); // marijn trick vars
+	int sum_counter(0);
+	int burnin(50);
+	
 	while (true) {
+	  Timer total_timer;
 		ostringstream ose;
-		ose << "img/mom_sub_in-" << epoch << ".png";
+		ose << img_path << "mom_sub_in-" << epoch << ".png";
 		copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, rand()%2, rand()%2, rand()%2, rand()%2);
 
 		//copy_subvolume(tiff_data, net.input(), tiff_label, label_subset, true);
-		net.input().rand_zero(.2);
+		//
+		//net.input().rand_zero(.2);
 		net.input().draw_slice(ose.str(),0);
 
 		// return 1;
 		ostringstream osse;
-		osse << "img/mom_sub_label-" << epoch << ".png";
+		osse << img_path << "mom_sub_label-" << epoch << ".png";
 		label_subset.draw_slice(osse.str(),0);
 
 		Timer ftimer;
@@ -242,7 +250,7 @@ int main(int argc, char **argv) {
 		cout << "forward took:" << ftimer.since() << endl;
 
 		ostringstream oss;
-		oss << "img/mom-rmsprop-" << epoch << ".png";
+		oss << img_path << "mom-rmsprop-" << epoch << ".png";
 		net.output().draw_slice(oss.str(), 0);
 		//cout << net.output().to_vector() << endl;
 		//cout << net.param.to_vector() << endl;
@@ -251,9 +259,9 @@ int main(int argc, char **argv) {
 		//if (loss < last_loss) {
 		last_loss = loss;
 		net.save(netname);
-
+		
 		//}
-
+		
 		Timer timer;
 		net.backward();
 		cout << "backward took:" << timer.since() << "\n\n";
@@ -301,13 +309,31 @@ int main(int argc, char **argv) {
 		//net.d.abs();
 		//net.c *= net.d;
 
+		//Marijn Trick 2
+
+		if (epoch >= burnin) {
+		  net.d = net.param;
+		  net.d *= (1.0 / n_sums);
+		  net.e += net.d;
+		  ++sum_counter;
+		  
+		  if (sum_counter == n_sums) {
+		    net.param = net.e;
+		    net.e.zero();
+		    net.c.zero();
+		    sum_counter = 0;
+		    net.save("mean.net");
+		  }
+		  
+		}
+
 		//Momentum
 
-		net.d = net.c;
-		net.d *= (1.0 - mean_decay);
-		net.e *= mean_decay;
-		net.e += net.d;
-		net.c = net.e;
+		//net.d = net.c;
+		//net.d *= (1.0 - mean_decay);
+		//net.e *= mean_decay;
+		//net.e += net.d;
+		//net.c = net.e;
 
 		//update
 		//net.c.clip(1.);
@@ -321,6 +347,7 @@ int main(int argc, char **argv) {
 
 
 		++epoch;
+		cout << "epoch time: " << total_timer.since() << endl;
 		// return 0;
 	}
 

@@ -21,14 +21,14 @@ void print_last(vector<float> vals, int n) {
 }
 
 int main(int argc, char **argv) {
-  Global::validation() = true;
+  //Global::validation() = true;
 	if (argc < 4) {
 		cout << "usage: eval [net] [in] [out]" << endl;
 		return 1;
 	}
 
 	//VolumeShape shape{100, 1, 512, 512};
-	Handler::set_device(0);
+	Handler::set_device(1);
 
 	ostringstream oss;
 
@@ -45,8 +45,8 @@ int main(int argc, char **argv) {
 	sub_shape.w = 128;
 	sub_shape.h = 128;
 	sub_shape.z = 8;
-	int nstep_x = 4;
-	int nstep_y = 4;
+	int nstep_x = 6;
+	int nstep_y = 6;
 	int nstep_z = 4;
 
 	VolumeShape stepsize = VolumeShape{data_shape.z - sub_shape.z, 1, data_shape.w - sub_shape.w, data_shape.h - sub_shape.h};
@@ -88,6 +88,7 @@ int main(int argc, char **argv) {
 
 	//Wonmin net2
 	net.add_fc(32);
+	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
 	net.add_fc(64, .5);
 	net.add_tanh();
@@ -122,34 +123,37 @@ int main(int argc, char **argv) {
 				int idxy = min(y * stepsize.h, data_shape.h - sub_shape.h);
 				int idxz = min(z * stepsize.z, data_shape.z - sub_shape.z);
 				copy_subvolume_test(tiff_data, net.input(), idxx, idxy, idxz);
-				(*net.input().buf) *= .8;
-				net.input().draw_slice("jemoeder.png",0);
-
+				//(*net.input().buf) *= .8;
+				//net.input().draw_slice("jemoeder.png",0);
+				
 				Timer ftimer;
-				net.forward();
-				cout << "forward took:" << ftimer.since() << endl;
 
-				vector<float> net_output = net.output().to_vector();
-				vector<float>::iterator net_output_it(net_output.begin());
-
-				for(int z2(0); z2 < sub_shape.z; z2++) {
-					for(int c2(0); c2 < out_shape.c; c2++) {
-						for(int x2(0); x2 < sub_shape.w; x2++) {
-							for(int y2(0); y2 < sub_shape.h; y2++, ++net_output_it){
-								float dist = pow(float(z2 - sub_shape.z / 2) / (sub_shape.z / 2), 2.0) +
-											   pow(float(x2 - sub_shape.w / 2) / (sub_shape.w / 2), 2.0) +
-											   pow(float(y2 - sub_shape.h / 2) / (sub_shape.h / 2), 2.0);
-							    float weight = exp(-dist);
-								vector<float>::iterator final_output_it(final_output.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
-								vector<float>::iterator final_count_it(final_count.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
-								*final_output_it += *net_output_it * weight;
-								*final_count_it += weight;
-							}
-						}
+				for (size_t n(0); n < 3; ++n) {
+				  net.forward();
+				  cout << "forward took:" << ftimer.since() << endl;
+				  
+				  vector<float> net_output = net.output().to_vector();
+				  vector<float>::iterator net_output_it(net_output.begin());
+				  
+				  for(int z2(0); z2 < sub_shape.z; z2++) {
+				    for(int c2(0); c2 < out_shape.c; c2++) {
+				      for(int x2(0); x2 < sub_shape.w; x2++) {
+					for(int y2(0); y2 < sub_shape.h; y2++, ++net_output_it){
+					  float dist = pow(float(z2 - sub_shape.z / 2) / (sub_shape.z / 2), 2.0) +
+					    pow(float(x2 - sub_shape.w / 2) / (sub_shape.w / 2), 2.0) +
+					    pow(float(y2 - sub_shape.h / 2) / (sub_shape.h / 2), 2.0);
+					  float weight = exp(-dist);
+					  vector<float>::iterator final_output_it(final_output.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
+					  vector<float>::iterator final_count_it(final_count.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
+					  *final_output_it += *net_output_it * weight;
+					  *final_count_it += weight;
 					}
+				      }
+				    }
+				  }
+				  
+				  //float loss = net.calculate_loss(tiff_label);
 				}
-
-				//float loss = net.calculate_loss(tiff_label);
 			}
 		}
 	}

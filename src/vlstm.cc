@@ -1,5 +1,6 @@
 #include "vlstm.h"
 #include "divide.h"
+#include <typeinfo>
 
 using namespace std;
 
