@@ -86,17 +86,14 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 
 	/// rotation
 	int xnew(0), ynew(0);
-	if (deg >= 0.0){
+	if (deg != 0.0){
 		int xc = inshape.w - inshape.w/2;
 	    int yc = inshape.h - inshape.h/2;
 
 	    xnew = ((float)(xs+x)-xc)*cos(deg) - ((float)(ys+y)-yc)*sin(deg) + xc;
 	    ynew = ((float)(xs+x)-xc)*sin(deg) + ((float)(ys+y)-yc)*cos(deg) + yc;
 
-	    if (xnew >= 0 && xnew < inshape.w && ynew >= 0 && ynew < inshape.h){
-	        *succ = true;
-	    }
-	    else{
+	    if (!*succ || !(xnew >= 0 && xnew < inshape.w && ynew >= 0 && ynew < inshape.h) ) {
 	    	*succ = false;
 	    	return;
 	    }
@@ -104,7 +101,6 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 	else{
 		xnew = xs+x;
 		ynew = ys+y;
-		*succ = true;
 	}
 
 	int outx = xflip ? (outshape.w - 1 - x) : x;
@@ -189,17 +185,22 @@ void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool rot
 	        int x = Rand::randn(in.shape.w - out.shape.w + 1);
 		int y = Rand::randn(in.shape.h - out.shape.h + 1);
 		int z = Rand::randn(in.shape.z - out.shape.z + 1);
-		float deg = rotate ? rand_float() * 3.14 * .5 : -1.0;
+		float deg = rotate ? rand_float() * 3.14 * .5 : 0;
 
 		cout <<"copy_subvolume-idx: " << x << " " << y << " " << z <<  " / deg: " << deg << endl;
 		bool *succ;
 		cudaMalloc( (void**)&succ, sizeof(int) );
-
+		cudaMemset( (void*)succ, 1, sizeof(int) );
 		copy_subvolume_kernel<<<dimGrid, dimBlock>>>(inshape, outshape, in.data(), out.data(),
 			in2shape, out2shape, in2.data(), out2.data(), x, y, z, xflip, yflip, zflip, deg, succ);
 		cudaMemcpy( &succeed, succ, sizeof(bool), cudaMemcpyDeviceToHost );
 		cudaFree( succ );
 		cout << "	rotation succeed: " << succeed << "\n";
+		if (!rotate)
+		  break;
+		if (!succeed)	
+			rotate = false;
+		
 
 	}
 

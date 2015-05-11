@@ -23,7 +23,7 @@ struct VolumeShape {
 std::ostream &operator<<(std::ostream &out, VolumeShape shape);
 
 struct Volume {
-	Volume(VolumeShape shape);
+	Volume(VolumeShape shape = VolumeShape{0, 0, 0, 0});
 	Volume(VolumeShape shape, Volume &reuse_buffer);
 
 	float *slice(int z);
@@ -38,8 +38,10 @@ struct Volume {
 
   	void from_volume(Volume &other);
   	std::vector<F> to_vector();
+  	void from_vector(std::vector<F> &vec);
   	void thresholding(std::vector<F> &data, float threshold);
 	void draw_slice(std::string filename, int slice, float th=0.0);
+	void draw_slice_rgb(std::string filename, int slice);
 	void dropout(float p);
 	float *data();
 

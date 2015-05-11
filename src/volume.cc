@@ -89,6 +89,10 @@ std::vector<F> Volume::to_vector() {
 	return vec;
 }
 
+void Volume::from_vector(std::vector<F> &vec) {
+	buf->from_vector(vec);
+}
+
 void Volume::thresholding(std::vector<F> &data, float threshold) {
 	for (auto &v : data)
 		if (v > threshold)	v = 1.0;
@@ -100,6 +104,17 @@ void Volume::draw_slice(string filename, int slice, float th) {
 	if (th > 0.0)	thresholding(data, th);
 
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
+}
+
+void Volume::draw_slice_rgb(string filename, int slice) {
+	vector<F> data = to_vector();
+	vector<F> rgb(shape.w*shape.h*3);
+
+	for(int c(0); c < 3; c++)
+		for(int i(0); i < shape.w*shape.h; i++){
+			rgb[i*3+c] = data[slice * slice_size + c * shape.w*shape.h + i];
+		}
+	write_img(filename, 3, shape.w, shape.h, &rgb[0]);
 }
 
 void Volume::dropout(float p) {
