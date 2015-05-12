@@ -6,7 +6,7 @@
 #include <string>
 #include <iostream>
 
-inline Volume open_tiff(std::string name, bool do_normalize = false, bool binary = false)
+inline Volume open_tiff(std::string name, bool do_normalize = false, bool binary = false, bool rgb = false)
 {
     TIFF* tif = TIFFOpen(name.c_str(), "r");
     int z = 0;
@@ -19,20 +19,26 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool binary
         TIFFGetField(tif, TIFFTAG_IMAGEWIDTH, &w);
         TIFFGetField(tif, TIFFTAG_IMAGELENGTH, &h);
         npixels = w * h;
-
+        std::cout << w << " " << h << std::endl;
 		uint32 *raster = (uint32*) _TIFFmalloc(npixels * sizeof (uint32));
 
         std::vector<float> fdata;
         fdata.reserve(npixels);
         z++;
-        if (TIFFReadRGBAImage(tif, w, h, raster, 0)) {
+        if (TIFFReadRGBAImage(tif, w, h, raster, 1)) {
 			//for (auto d : data)
 			//	std::cout << int(d) << " ";
         	for (size_t i(0); i < npixels; ++i) {
 				uint32 val(raster[i]);
-				val = val % (1 << 8);
-                float fval = static_cast<float>(val) / 255.;
-                fdata.push_back(fval);
+
+                fdata.push_back(static_cast<float>(val % (1 << 8)) / 255.);
+                if (rgb) {
+                    val /= (1 << 8);
+                    fdata.push_back(static_cast<float>(val % (1 << 8)) / 255.);
+
+                    val /= (1 << 8);
+                    fdata.push_back(static_cast<float>(val % (1 << 8)) / 255.);
+                }
 			}
 			_TIFFfree(raster);
         } else {
@@ -58,6 +64,20 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool binary
                 v = 1.0 - v;
             handle_error( cudaMemcpy(v.slice(i), &v_data[i][0], v_data[i].size() * sizeof(F), cudaMemcpyHostToDevice));
         }
+        TIFFClose(tif);
+        return v;
+    } else if(rgb) {
+        Volume v(VolumeShape{z, 3, w, h});
+        std::vector<std::vector<float> > v_data_rgb(v_data);
+        for (size_t i(0); i < v_data.size(); ++i)
+                for (size_t c(0); c < 3; ++c)
+                    for (size_t n(0); n < w * h; ++n){
+                        v_data_rgb[i][c*w*h+n] = v_data[i][3*n+c];
+                    }
+
+        for (size_t i(0); i < v_data.size(); ++i)
+           handle_error( cudaMemcpy(v.slice(i), &v_data[i][0], v_data[i].size() * sizeof(F), cudaMemcpyHostToDevice));
+        std::cout << z << std::endl;
         TIFFClose(tif);
         return v;
     } else {
