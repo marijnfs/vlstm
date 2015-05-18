@@ -25,6 +25,10 @@ std::ostream &operator<<(std::ostream &out, VolumeShape shape);
 struct Volume {
 	Volume(VolumeShape shape = VolumeShape{0, 0, 0, 0});
 	Volume(VolumeShape shape, Volume &reuse_buffer);
+	Volume(Volume const &o);
+	Volume(Volume &&o);
+	Volume &operator=(const Volume&);
+	~Volume();
 
 	float *slice(int z);
 	TensorShape slice_shape();
@@ -48,6 +52,7 @@ struct Volume {
 	VolumeShape shape;
 	CudaVec *buf;
 	int slice_size;
+	bool reused;
 };
 
 Volume &operator-=(Volume &in, Volume &other);

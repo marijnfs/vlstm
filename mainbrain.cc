@@ -55,6 +55,8 @@ int main(int argc, char **argv) {
 		oss2 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_IR.raw";
 		oss3 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR.raw";
 		inputs[n] = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
+		cout << inputs[n].shape << " " << inputs[n].buf->n << endl;
+
 		inputs[n].draw_slice_rgb("input.bmp",10);
 
 		//inputs[n].draw_slice_rgb("temp.bmp",0);
@@ -62,7 +64,7 @@ int main(int argc, char **argv) {
 		oss_label << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "LabelsForTraining.raw";
 		outputs[n] = open_raw(oss_label.str(), width, height, depth);
 		outputs[n].draw_slice_rgb("label.bmp",10);
-	
+
 	}
 
 	// Volume test(VolumeShape{3, 1, 100, 100});
@@ -87,15 +89,11 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	sub_shape.w = 32;
-	sub_shape.h = 32;
-	sub_shape.z = 8;
-	// sub_shape.w = 32;
-	// sub_shape.h = 32;
-	// sub_shape.z = 16;
-	// sub_shape.w = 256;
-	// sub_shape.h = 256;
-	// sub_shape.z = 8;
+	sub_shape.w = 240;
+	sub_shape.h = 240;
+	sub_shape.z = 15;
+	// sub_shape.w = 32; sub_shape.h = 32; sub_shape.z = 16; sub_shape.w =
+	// 256; sub_shape.h = 256; sub_shape.z = 8;
 
 	//We need a volume for sub targets
 	Volume label_subset(VolumeShape{sub_shape.z, outputs[0].shape.c, sub_shape.w, sub_shape.h});
@@ -181,7 +179,7 @@ int main(int argc, char **argv) {
 	epoch = 0;
 	float last_loss = 9999999.;
 
-	float base_lr = .01;
+	float base_lr = .1;
 	float const LR_DECAY = pow(.5, 1.0 / 100);
 
 	int n_sums(50); // marijn trick vars
@@ -193,7 +191,7 @@ int main(int argc, char **argv) {
 		ostringstream ose;
 		ose << img_path << "mom_sub_in-" << epoch << ".png";
 		int brainnum = rand() % n_brains;
-		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, rand()%2, rand()%2, rand()%2, rand()%2);
+		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, rand()%2, false, false);
 
 		//copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, true);
 		//
@@ -231,6 +229,7 @@ int main(int argc, char **argv) {
 		// net.update(.1);
 
 		//SGD
+		net.c = net.grad;
 		// net.grad *= .00001;
 		// net.param += net.grad;
 
@@ -243,7 +242,9 @@ int main(int argc, char **argv) {
 
 		// float lr = epoch < 4 ? .0001 : .001;
 
-		float lr = .00001 + base_lr;
+		float lr = .000001 + base_lr;
+
+		/*
 		base_lr *= LR_DECAY;
 		net.a = net.grad;
 		net.a *= net.a;
@@ -256,7 +257,7 @@ int main(int argc, char **argv) {
 		net.b += eps;
 
 		net.c = net.grad;
-		net.c /= net.b;
+		net.c /= net.b;*/
 
 		//Marijn Trick
 

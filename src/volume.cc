@@ -5,7 +5,7 @@
 
 using namespace std;
 
-Volume::Volume(VolumeShape shape_) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h) {
+Volume::Volume(VolumeShape shape_) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h), reused(false) {
 	// size_t even_size(((size() + 1) / 2) * 2); //we want multiple of two for curand
 	cout << "allocating volume: " << shape << " nfloats: " << size() << endl;
 	//handle_error( cudaMalloc((void**)&data, sizeof(float) * size()) 	);
@@ -13,7 +13,7 @@ Volume::Volume(VolumeShape shape_) : shape(shape_), slice_size(shape_.c * shape_
 	zero();
 }
 
-Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h) {
+Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h), reused(true) {
 	if (size() > reuse_buffer.buf->n) {
 		cout << "resizing " << size() << " / "  << reuse_buffer.buf->n << endl;
 		reuse_buffer.buf->resize(size());
@@ -21,6 +21,25 @@ Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), slice_
 	//data = reuse_buffer.data;
 	buf = reuse_buffer.buf;
 	zero();
+}
+
+Volume::Volume(Volume &&o) : shape(o.shape), buf(o.buf), slice_size(o.slice_size), reused(o.reused) {
+}
+
+Volume::Volume(Volume const &o) : shape(o.shape), buf(o.buf), slice_size(o.slice_size), reused(o.reused) {
+}
+
+Volume& Volume::operator=(Volume const &o) {
+	shape = o.shape;
+	buf = o.buf;
+	slice_size = o.slice_size;
+	reused  = o.reused;
+	return *this;
+}
+
+Volume::~Volume(){
+	// if (!reused)
+		// delete buf;
 }
 
 
@@ -83,10 +102,7 @@ float Volume::norm2() {
 }
 
 std::vector<F> Volume::to_vector() {
-	vector<F> vec(size());
-	// cout << size() << " " << data << " ";
-	handle_error( cudaMemcpy(&vec[0], buf->data, vec.size() * sizeof(F), cudaMemcpyDeviceToHost));
-	return vec;
+	return buf->to_vector();
 }
 
 void Volume::from_vector(std::vector<F> &vec) {
