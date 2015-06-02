@@ -50,7 +50,7 @@ int main(int argc, char **argv) {
 	for (size_t n(start); n < n_brains; ++n) {
 		ostringstream oss1, oss2, oss3;
 		oss1 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1.raw";
-		oss2 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_IR.raw";
+		oss2 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_IR_PP.raw";
 		oss3 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR.raw";
 		Volume raw_data = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
 	//	raw_data.draw_slice_rgb("test.bmp",10);
@@ -75,7 +75,6 @@ int main(int argc, char **argv) {
 		oss_in.clear();
 		oss_in << argv[2] << "/Segm_MRBrainS13_"  << std::setw(2) << std::setfill('0') << n+1 << "-input3" << ".tif";
 		save_tiff(oss_in.str(), raw_data.to_vector(), data_shape, 2);
-
 
 		//sub_shape.w = 128;
 		//sub_shape.h = 128;

@@ -19,6 +19,14 @@ void print_last(vector<float> vals, int n) {
 	cout << endl;
 }
 
+void print_wide(vector<float> vals, int n) {
+	int step(vals.size() / n);
+	for (size_t i(0); i < vals.size(); i += step)
+		cout << vals[i] << " ";
+	cout << endl;
+}
+
+
 int main(int argc, char **argv) {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
@@ -50,11 +58,13 @@ int main(int argc, char **argv) {
 	vector<Volume> outputs(n_brains);
 
 	for (size_t n(0); n < n_brains; ++n) {
-		ostringstream oss1, oss2, oss3, oss_label;
+		ostringstream oss1, oss2, oss3, oss4, oss5,oss_label;
 		oss1 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1.raw";
-		oss2 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_IR.raw";
+		oss2 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_IR_PP.raw";
 		oss3 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR.raw";
-		inputs[n] = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
+		oss4 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_PP.raw";
+		oss5 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR_PP.raw";
+		inputs[n] = open_raw5(oss1.str(), oss2.str(), oss3.str(), oss4.str(), oss5.str(), width, height, depth);
 		cout << inputs[n].shape << " " << inputs[n].buf->n << endl;
 
 		inputs[n].draw_slice_rgb("input.bmp",10);
@@ -89,8 +99,8 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	sub_shape.w = 240;
-	sub_shape.h = 240;
+	sub_shape.w = 128;
+	sub_shape.h = 128;
 	sub_shape.z = 15;
 	// sub_shape.w = 32; sub_shape.h = 32; sub_shape.z = 16; sub_shape.w =
 	// 256; sub_shape.h = 256; sub_shape.z = 8;
@@ -123,7 +133,7 @@ int main(int argc, char **argv) {
 	// net.add_softmax();
 
 	//Wonmin net
-	//net.add_fc(16);
+	// net.add_fc(16);
 	net.add_vlstm(7, 7, 16);
 	net.add_fc(25);
 	net.add_tanh();
@@ -131,7 +141,7 @@ int main(int argc, char **argv) {
 	net.add_fc(45);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 64);
-	// net.add_fc(32);
+	// net.add_fc(128);
 	// net.add_tanh();
 	net.add_fc(5);
 	net.add_softmax();
@@ -155,8 +165,6 @@ int main(int argc, char **argv) {
 
 	net.finish();
 	//net.init_normal(0, .1);
-	net.init_uniform(.1);
-
 
 	cout << net.volumes[0]->x.shape << endl;
 	cout << inputs[0].shape << endl;
@@ -166,6 +174,9 @@ int main(int argc, char **argv) {
 
 	if (argc > 1) {
 	  net.load(argv[1]);
+	}
+	else{
+		net.init_uniform(.1);
 	}
 
 	logger << "begin description\n";
@@ -179,7 +190,8 @@ int main(int argc, char **argv) {
 	epoch = 0;
 	float last_loss = 9999999.;
 
-	float base_lr = .1;
+	//float base_lr = .1;
+	float base_lr = .01;
 	float const LR_DECAY = pow(.5, 1.0 / 100);
 
 	int n_sums(50); // marijn trick vars
@@ -191,7 +203,7 @@ int main(int argc, char **argv) {
 		ostringstream ose;
 		ose << img_path << "mom_sub_in-" << epoch << ".png";
 		int brainnum = rand() % n_brains;
-		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, rand()%2, false, false);
+		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, rand()%2, false, false); // rotate, xflip, yflip, zflip
 
 		//copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, true);
 		//
@@ -229,9 +241,7 @@ int main(int argc, char **argv) {
 		// net.update(.1);
 
 		//SGD
-		net.c = net.grad;
-		// net.grad *= .00001;
-		// net.param += net.grad;
+		//net.c = net.grad;
 
 		//RMS PROP
 		float decay = epoch < 4 ? 0.5 : 0.9;
@@ -242,10 +252,9 @@ int main(int argc, char **argv) {
 
 		// float lr = epoch < 4 ? .0001 : .001;
 
-		float lr = .000001 + base_lr;
-
-		/*
+		float lr = .0000001 + base_lr;
 		base_lr *= LR_DECAY;
+
 		net.a = net.grad;
 		net.a *= net.a;
 		net.rmse *= decay;
@@ -257,7 +266,7 @@ int main(int argc, char **argv) {
 		net.b += eps;
 
 		net.c = net.grad;
-		net.c /= net.b;*/
+		net.c /= net.b;
 
 		//Marijn Trick
 
@@ -301,14 +310,14 @@ int main(int argc, char **argv) {
 		net.c *= lr;
 		net.param += net.c;
 
-		print_last(net.grad.to_vector(), 10);
-		print_last(net.rmse.to_vector(), 10);
-		print_last(net.e.to_vector(), 10);
-		print_last(net.param.to_vector(), 10);
+		print_wide(net.grad.to_vector(), 20);
+		// print_last(net.rmse.to_vector(), 10);
+		// print_last(net.e.to_vector(), 10);
+		print_wide(net.param.to_vector(), 20);
 
 
 		++epoch;
-		cout << "epoch time: " << total_timer.since() << endl;
+		cout << "epoch time: " << total_timer.since() <<" lr: " << lr << endl;
 		// return 0;
 	}
 

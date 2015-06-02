@@ -78,6 +78,86 @@ inline Volume open_raw(std::string name1, std::string name2, std::string name3, 
     return volume;
 }
 
+inline Volume open_raw5(std::string name1, std::string name2, std::string name3, std::string name4, std::string name5, 
+                            int W, int H, int Z)
+{
+    std::ifstream file1(name1.c_str(), std::ios::binary);
+    std::ifstream file2(name2.c_str(), std::ios::binary);
+    std::ifstream file3(name3.c_str(), std::ios::binary);
+    std::ifstream file4(name2.c_str(), std::ios::binary);
+    std::ifstream file5(name3.c_str(), std::ios::binary);
+
+    if (!file1 || !file2 || !file3 || !file4 || !file5)
+        throw StringException(name1.c_str());
+
+    Volume volume(VolumeShape{Z, 5, W, H});
+    std::vector<float> data(Z*5*W*H);
+    std::vector<float>::iterator it(data.begin());
+
+
+
+    for (int z(0); z < Z; z++){
+        for (int i(0); i < W*H; i++, it++){
+            *it = (float)byte_read<short>(file1);
+
+        }
+        for (int i(0); i < W*H; i++, it++){
+            *it = (float)byte_read<short>(file2);
+        }
+        for (int i(0); i < W*H; i++, it++){
+            *it = (float)byte_read<short>(file3);
+        }
+        for (int i(0); i < W*H; i++, it++){
+            *it = (float)byte_read<short>(file4);
+        }
+        for (int i(0); i < W*H; i++, it++){
+            *it = (float)byte_read<short>(file5);
+        }
+
+    }
+
+    // std::vector<float>::iterator it1(data.begin());
+    // for (int n(0); n < Z*3; n++, it1 += (W * H)){
+    //     normalize(it1, it1 + (W * H));
+    // }
+
+    // normalization
+    std::vector<float> means(5);
+    std::vector<float> vars(5);
+
+    std::vector<float>::iterator it1(data.begin());
+    for (int n(0); n < Z; n++)
+        for (int c(0); c < 5; c++)
+            for (int i(0); i < W * H; i++, it1++)
+                means[c] += *it1;
+
+    for (int c(0); c < 5; c++)
+        means[c] /= Z * W * H;
+
+    it1 = data.begin();
+    for (int n(0); n < Z; n++)
+        for (int c(0); c < 5; c++)
+            for (int i(0); i < W * H; i++, it1++)
+                vars[c] += (*it1-means[c])*(*it1-means[c]);
+
+
+    for (int c(0); c < 5; c++)
+        vars[c] = sqrt(vars[c] / (Z * W * H - 1));
+
+    it1 = data.begin();
+    for (int n(0); n < Z; n++)
+        for (int c(0); c < 5; c++)
+            for (int i(0); i < W * H; i++, it1++)
+                *it1 = (*it1-means[c])/vars[c];
+
+
+
+    volume.from_vector(data);
+
+    std::cout << "read " << volume.shape << " "  << volume.buf->n << std::endl;
+    return volume;
+}
+
 inline Volume open_raw(std::string name, int W, int H, int Z)
 {
     int C = 5;
@@ -118,7 +198,7 @@ inline void save_raw_classification(std::string name, std::vector<float> image, 
             for (int x(0); x < s.w; x++){
                 int best = 0;
                 float value = 0;
-                for (int c(0); c < s.c-1; c++){
+                for (int c(0); c < s.c; c++){
                     float v = image[z * s.h * s.w * s.c + c * s.h * s.w + x * s.h + y];
                     if (v > value){
                         best = c;
