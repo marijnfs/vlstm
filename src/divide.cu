@@ -134,6 +134,7 @@ __global__ void copy_subvolume_test_kernel(VolumeShape inshape, VolumeShape outs
 	copy_c(in + in_index, out + out_index, inshape.w * inshape.h, outshape.w * outshape.h, outshape.c);
 }
 
+
 void divide(Volume &from, Volume &to, int n) {
 	VolumeShape shape = from.shape;
 
@@ -198,9 +199,9 @@ void copy_subvolume(Volume &in, Volume &out, Volume &in2, Volume &out2, bool rot
 		cout << "	rotation succeed: " << succeed << "\n";
 		if (!rotate)
 		  break;
-		if (!succeed)	
+		if (!succeed)
 			rotate = false;
-		
+
 
 	}
 

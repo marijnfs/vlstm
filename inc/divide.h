@@ -2,7 +2,6 @@
 #define __DIVIDE_H__
 
 #include <cuda.h>
-#include "divide.h"
 #include "volume.h"
 
 __device__ __forceinline__ int get_index(int X, int Y, int Z, int C, int x, int y, int z) {
@@ -27,6 +26,8 @@ __global__ void copy_subvolume_kernel(VolumeShape inshape, VolumeShape outshape,
 	float *in2, float *out2, int xs, int ys, int zs, bool xflip, bool yflip, bool zflip, float deg, bool *succ);
 
 __global__ void copy_subvolume_test_kernel(VolumeShape inshape, VolumeShape outshape, float *in, float *out, int xs, int ys, int zs);
+
+
 
 void divide(Volume &v, Volume &to, int n);
 void combine(Volume &v, Volume &to, int n);

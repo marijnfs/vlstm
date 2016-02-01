@@ -337,3 +337,73 @@ void VLSTMOperation::update(float lr) {
 /*	operations[0]->update(lr);
 	operations[2]->update(lr);*/
 }
+
+
+
+//Vlstm
+UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm) : kg(kg_), ko(ko_), c(c_)
+{
+	// for (size_t i(0); i < 6; ++i)
+		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
+
+	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm));
+	//operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm)); //only forward
+
+	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm));
+
+	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
+
+	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
+	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
+
+	// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
+	// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
+
+	// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
+	// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
+
+	clear();
+	for (auto &op : operations)
+		op->forward_dry_run();
+}
+
+
+void UniVLSTMOperation::forward(Volume &in, Volume &out) {
+	for (size_t i(0); i < operations.size(); ++i) {
+		operations[i]->clear();
+		unidivide(in, operations[i]->input().x, i);
+		operations[i]->forward();
+		unicombine(operations[i]->output().x, out, i);
+		// if (i == 0) {
+		// 	operations[0]->volumes["c"]->x.draw_slice("c1.png", 1);
+		// 	operations[0]->volumes["c"]->x.draw_slice("c3.png", 3);
+		// 	operations[0]->volumes["i"]->x.draw_slice("i1.png", 1);
+		// 	operations[0]->volumes["i"]->x.draw_slice("i3.png", 3);
+		// 	operations[0]->volumes["o"]->x.draw_slice("o1.png", 1);
+		// 	operations[0]->volumes["o"]->x.draw_slice("o3.png", 3);
+		// }
+	}
+}
+
+void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
+	// operations[0]->clear_grad();
+	// operations[2]->clear_grad();
+
+	for (size_t i(0); i < operations.size(); ++i) {
+		//forward
+		operations[i]->clear_grad();
+		operations[i]->clear();
+		unidivide(in.x, operations[i]->input().x, i);
+		operations[i]->forward();
+
+		//backward
+		unidivide(out.diff, operations[i]->output().diff, i);
+		operations[i]->backward();
+		unicombine(operations[i]->input().diff, in.diff, i);
+		// operations[i]->scale_grad();
+	}
+	// operations[0]->scale_grad();
+	// operations[2]->scale_grad();
+}

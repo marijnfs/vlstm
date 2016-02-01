@@ -84,4 +84,10 @@ struct VLSTMOperation : public VolumeOperation {
 	std::vector<LSTMOperation*> operations;
 };
 
+struct UniVLSTMOperation : public VLSTMOperation {
+	UniVLSTMOperation(VolumeShape shape, int kg, int ko, int c, VolumeSetMap &vsm);
+
+	void describe(std::ostream &out) { out << "uni vlstm " << kg << " " << ko << " " << c; }
+};
+
 #endif
