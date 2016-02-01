@@ -34,9 +34,6 @@ void VolumeNetwork::finish() {
 	forward_dry_run();
 
 	register_params();
-	param.resize(n_params);
-	grad.resize(n_params);
-
 	align_params();
 	for(auto o : operations)
 		o->sharing();
@@ -62,22 +59,27 @@ void VolumeNetwork::register_params() {
 }
 
 void VolumeNetwork::align_params() {
-
-	cout << "n params: " << n_params << endl;
-	//throw "";
+	param.resize(n_params);
+	grad.resize(n_params);
 
 	for (auto &p : params)
 		cudaFree(*(p.ptr));
 	for (auto &g : grads)
 		cudaFree(*(g.ptr));
 
-	float *ptr = param.data;
+	position_params(param.data, grad.data);
+	cout << "n params: " << n_params << endl;
+	//throw "";
+}
+
+void VolumeNetwork::position_params(float *pos_param, float *pos_grad) {
+	float *ptr = pos_param;
 	for (auto &p : params) {
 		*(p.ptr) = ptr;
 		ptr += p.n;
 	}
 
-	ptr = grad.data;
+	ptr = pos_grad;
 	for (auto &g : grads) {
 		*(g.ptr) = ptr;
 		ptr += g.n;

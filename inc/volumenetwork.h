@@ -23,6 +23,7 @@ struct VolumeNetwork {
 	void init_normal(float mean, float std);
 	void init_uniform(float std);
 	void align_params();
+	void position_params(float *pos_param, float *pos_grad);
 
 	Volume &input();
 	Volume &output();
