@@ -48,11 +48,14 @@ int main(int argc, char **argv) {
 	vector<Volume> outputs(n_brains);
 
 	for (size_t n(start); n < n_brains; ++n) {
-		ostringstream oss1, oss2, oss3;
+		ostringstream oss1, oss2, oss3, oss4, oss5;
 		oss1 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1.raw";
 		oss2 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_IR_PP.raw";
 		oss3 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR.raw";
-		Volume raw_data = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
+		oss4 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_PP.raw";
+		oss5 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR_PP.raw";
+		Volume raw_data = open_raw5(oss1.str(), oss2.str(), oss3.str(), oss4.str(), oss5.str(), width, height, depth);
+		//Volume raw_data = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
 	//	raw_data.draw_slice_rgb("test.bmp",10);
 
 
@@ -150,6 +153,7 @@ int main(int argc, char **argv) {
 		cout << raw_data.shape << endl;
 		// net.set_input(raw_data);
 
+		Timer wholetimer;
 		bool bla(false);
 		for(int z(0); z < nstep_z; z++){
 			for(int y(0); y < nstep_y; y++){
@@ -200,6 +204,8 @@ int main(int argc, char **argv) {
 		  *final_output_it /= (*final_count_it) + .00001;
 			// *final_output_it = rand_float();
 
+		cout << "the program took (per-image):" << wholetimer.since() << endl;	
+		
 		cudaDeviceSynchronize();
 
 		ostringstream oss_label;
@@ -214,6 +220,8 @@ int main(int argc, char **argv) {
 			oss << "mrbrain-test/Segm_MRBrainS13_"  << std::setw(2) << std::setfill('0') << n+1 << "-" << ch << ".tif";
 			save_tiff(oss.str(), raw_data.to_vector(), data_shape, ch);
 		}
+
+
 
 	}
 

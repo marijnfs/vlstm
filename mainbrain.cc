@@ -99,9 +99,9 @@ int main(int argc, char **argv) {
 
 	// in_data.init_normal(0, .5);
 	// out_data.init_normal(0, .5);
-	sub_shape.w = 128;
-	sub_shape.h = 128;
-	sub_shape.z = 15;
+	sub_shape.w = 240;
+	sub_shape.h = 240;
+	sub_shape.z = 25;
 	// sub_shape.w = 32; sub_shape.h = 32; sub_shape.z = 16; sub_shape.w =
 	// 256; sub_shape.h = 256; sub_shape.z = 8;
 
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
 	float last_loss = 9999999.;
 
 	//float base_lr = .1;
-	float base_lr = .01;
+	float base_lr = .001;
 	float const LR_DECAY = pow(.5, 1.0 / 100);
 
 	int n_sums(50); // marijn trick vars
@@ -203,7 +203,7 @@ int main(int argc, char **argv) {
 		ostringstream ose;
 		ose << img_path << "mom_sub_in-" << epoch << ".png";
 		int brainnum = rand() % n_brains;
-		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, rand()%2, false, false); // rotate, xflip, yflip, zflip
+		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, false, rand()%2, false); // rotate, xflip, yflip, zflip
 
 		//copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, true);
 		//
