@@ -88,6 +88,8 @@ struct UniVLSTMOperation : public VLSTMOperation {
 	UniVLSTMOperation(VolumeShape shape, int kg, int ko, int c, VolumeSetMap &vsm);
 
 	void describe(std::ostream &out) { out << "uni vlstm " << kg << " " << ko << " " << c; }
+	void forward(Volume &in, Volume &out);
+	void backward(VolumeSet &in, VolumeSet &out);
 };
 
 #endif
