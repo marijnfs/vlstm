@@ -52,6 +52,7 @@ struct CudaVec {
 		handle_error( cudaMemcpy(data, &vec[0], n * sizeof(float), cudaMemcpyHostToDevice));
 	}
 
+
 	CudaVec &sqrt();
 	CudaVec &abs();
 	CudaVec &pow(float e);

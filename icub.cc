@@ -2,6 +2,7 @@
 #include <cuda.h>
 #include <sstream>
 
+#include "network.h"
 #include "volume.h"
 #include "volumenetwork.h"
 #include "vlstm.h"
@@ -14,32 +15,39 @@
 
 using namespace std;
 
-void print_last(vector<float> vals, int n) {
+inline void print_last(vector<float> vals, int n) {
 	for (size_t i(vals.size() - n); i < vals.size(); ++i)
 		cout << vals[i] << " ";
 	cout << endl;
 }
 
-void random_next_step_subvolume(Database &db, Volume &input, Volume &target, int n) {
+inline void random_next_step_subvolume(Database &db, Volume &input, Volume &target) {
 	int N = db.count("img");
 	int diff = 1;
+	int n = input.shape.z;
 	int sub_n = n + diff; //1step prediction
 	int start = rand() % (N - sub_n);
-	for (size_t i(start); i < start + sub_n; ++i) {
-		Img img = db.load<Img>("img", i);
+	for (size_t i(0); i < sub_n; ++i) {
+		cout << i << endl;
+		Img img = db.load<Img>("img", i + start);
 		assert(img.w == input.shape.w);
 		assert(img.h == input.shape.h);
 		assert(img.c == input.shape.c);
 
-		Action action = db.load<Action>("action", i);
-		if (i < start + sub_n + diff)
-			copy(img.data().begin(), img.data().end(), input.slice(i));
+		Action action = db.load<Action>("action", i + start);
+		cout << "copy:" << endl;
+		cout << img.data().data() << " " << input.slice(i) << " " << img.data().size() << endl;
+		cout << "input shape " << input.shape << endl;
+		if (i < n)
+			copy_to_gpu<>(img.data().data(), input.slice(i),  img.data().size());
 		if (i >= diff)
-			copy(img.data().begin(), img.data().end(), target.slice(i-diff));
+			copy_to_gpu<>(img.data().data(), target.slice(i-diff), img.data().size());
 	}
 }
 
 int main(int argc, char **argv) {
+	Log logger("log.txt");
+
 	Database db("/home/cvlstm/data/exp3.db");
 	cout << db.count("exp") << endl;
 	cout << db.count("img") << endl;
@@ -62,7 +70,12 @@ int main(int argc, char **argv) {
 	VolumeShape train_shape{train_n, img_c, img_w, img_h};
 	Volume input(train_shape), target(train_shape);
 
-	Log logger("log.txt");
+	random_next_step_subvolume(db, input, target);
+
+	//Fast-weight network
+	TensorShape action_input{train_n, 3, 1, 1};
+	Network<float> fastweight_net(action_input);
+
 	return 0;
 
 	//VolumeShape shape{100, 1, 512, 512};
@@ -71,6 +84,7 @@ int main(int argc, char **argv) {
 
 	//int kg(3), ko(3), c(1);
 	int kg(7), ko(7), c(1);
+
 
 	string netname = "net.save";
 	VolumeNetwork net(train_shape);
@@ -120,7 +134,7 @@ int main(int argc, char **argv) {
 	int sum_counter(0);
 	int burnin(50);
 
-	string img_path = ".";
+
 
 	while (true) {
 	  Timer total_timer;
