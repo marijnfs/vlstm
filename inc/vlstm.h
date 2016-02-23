@@ -10,55 +10,91 @@
 #include "volumeoperation.h"
 
 
-
-struct LSTMOperation {
-	LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap *reuse = 0);
+struct SubVolumeOperation {
+	SubVolumeOperation(VolumeShape in);
+	virtual ~SubVolumeOperation(){}
 
 	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
- 	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
+	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
+	void add_op_rollout(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
 
  	void add_volume(std::string name, VolumeShape shape, VolumeSetMap *reuse = 0);
 	void add_volume(std::string name, VolumeSet &set);
-
 	bool exists(std::string name);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
 
- 	void forward_dry_run();
- 	void forward();
- 	void backward();
+ 	virtual void forward_dry_run();
+ 	virtual void forward();
+ 	virtual void backward();
+
+ 	void update(float lr);
+
  	void scale_grad();
-
-	void add_operations(VolumeSetMap *reuse = 0);
 	void clear();
 	void clear_grad();
+
 	void init_normal(F mean, F std);
 	void init_uniform(F var);
-
-	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
-	void share(LSTMOperation &o);
-
-	void update(float lr);
 
 	VolumeSet &input() { return *vin; }
 	VolumeSet &output() { return *vout; }
 
+
+	VolumeShape in_shape;
+ 	VolumeSetMap volumes;
+
+ 	std::vector<TimeOperation*>   operations;
+	std::vector<Parametrised<F>*> parameters;
+ 	VolumeSet *vin, *vout;
+
 	int T;
+
+};
+
+struct LSTMOperation : public SubVolumeOperation {
+	LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap *reuse = 0);
+	LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout, VolumeSetMap *reuse = 0);
+	virtual ~LSTMOperation(){}
+
+ 	// void forward();
+ 	// void backward();
+
+	void add_operations(VolumeSetMap *reuse = 0);
+	void add_operations_rollout(VolumeSetMap *reuse = 0);
+
+	void share(LSTMOperation &o);
 
 	ConvolutionOperation<F> xi, hi; //input gate
 	ConvolutionOperation<F> xr, hr; //remember gate (forget gates dont make sense!)
 	ConvolutionOperation<F> xs, hs; //cell input
 	ConvolutionOperation<F> xo, ho;//, co; //output gate
 
-	GateOperation<F>		 gate;   //for gating
+	GateOperation<F>    gate;   //for gating
 	SigmoidOperation<F> sig;
-	TanhOperation<F> tan;
+	TanhOperation<F>    tan;
 
-	VolumeShape in_shape;
- 	VolumeSetMap volumes;
-
- 	std::vector<TimeOperation*> operations;
-	std::vector<Parametrised<F>*> parameters;
- 	VolumeSet *vin, *vout;
 };
+
+struct LSTMShiftOperation : public SubVolumeOperation {
+	LSTMShiftOperation(VolumeShape in, int kg, int ko, int c, int dx, int dy, VolumeSetMap *reuse = 0);
+	virtual ~LSTMShiftOperation(){}
+ 	// void forward();
+ 	// void backward();
+
+	void add_operations(VolumeSetMap *reuse = 0);
+
+
+	ConvolutionShiftOperation<F> xi, hi; //input gate
+	ConvolutionShiftOperation<F> xr, hr; //remember gate (forget gates dont make sense!)
+	ConvolutionShiftOperation<F> xs, hs; //cell input
+	ConvolutionShiftOperation<F> xo, ho;//, co; //output gate
+
+	GateOperation<F>    gate;   //for gating
+	SigmoidOperation<F> sig;
+	TanhOperation<F>    tan;
+
+};
+
 
 struct VLSTMOperation : public VolumeOperation {
 	VLSTMOperation(VolumeShape shape, int kg, int ko, int c, VolumeSetMap &vsm);

@@ -139,6 +139,7 @@ void SigmoidVolumeOperation::backward(VolumeSet &in, VolumeSet &out){
 
 	op.backward(tin, tout, tout_err, tin_err);
 }
+
 //Volume Operation
 TimeOperation1::TimeOperation1(Operation<F> &op_, VolumeSet &in_, VolumeSet &out_, int dt_, float beta_) :
 	op(op_), T(in_.x.shape.z), dt(dt_), beta(beta_),
@@ -176,6 +177,48 @@ void TimeOperation1::forward_dry_run() {
 	op.forward_dry_run(in_t, out_t);
 }
 
+
+////////////
+//Volume Operation Rolled out
+TimeOperation1Rollout::TimeOperation1Rollout(Operation<F> &op_, VolumeSet &in_, VolumeSet &out_, int dt_, float beta_) :
+	op(op_), T(in_.x.shape.z), dt(dt_), beta(beta_),
+	in(in_), out(out_),
+	in_t(in_.x.slice_shape(), 0),
+	out_t(out_.x.slice_shape(), 0),
+	in_err_t(in_.x.slice_shape(), 0),
+	out_err_t(out_.x.slice_shape(), 0)
+{}
+
+void TimeOperation1Rollout::forward(int t) {
+	if (dt > t)
+		return;
+	in_t.data = in.x.slice(t - dt);
+	out_t.data = out.x.slice(t);
+
+	op.forward_timed(in_t, out_t, t, beta); //for fastweight purposes
+}
+
+void TimeOperation1Rollout::backward(int t) {
+	if (dt > t)
+		return;
+	in_t.data = in.x.slice(t - dt);
+	out_t.data = out.x.slice(t);
+
+	in_err_t.data = in.diff.slice(t - dt);
+	out_err_t.data = out.diff.slice(t);
+
+	op.backward(in_t, out_t, out_err_t, in_err_t, beta);
+	op.backward_weights(in_t, out_err_t, 1.0);
+}
+
+void TimeOperation1Rollout::forward_dry_run() {
+	// cout << in_t.shape() << " " << out_t.shape() << endl;
+	op.forward_dry_run(in_t, out_t);
+}
+
+
+////////
+//Time operation 2 arguments (for gating)
 TimeOperation2::TimeOperation2(Operation2<F> &op_, VolumeSet &in_, VolumeSet &in2_, VolumeSet &out_, int dt_, float beta_) :
 	op(op_),T(in_.x.shape.z), dt(dt_), beta(beta_), in(in_), in2(in2_), out(out_),
 	in_t(in_.x.slice_shape(), 0),

@@ -105,6 +105,28 @@ struct TimeOperation1 : public TimeOperation
 
 };
 
+
+struct TimeOperation1Rollout : public TimeOperation
+{
+	TimeOperation1Rollout(Operation<F> &op, VolumeSet &in, VolumeSet &out, int dt, float beta = 1.0);
+
+	void forward(int t);
+	void backward(int t);
+	void forward_dry_run();
+
+	VolumeShape output_shape(VolumeShape input);
+
+	Operation<F> &op;
+	int T, dt;
+	float beta;
+
+	VolumeSet &in, &out;
+
+	Tensor<F> in_t, out_t;
+	Tensor<F> in_err_t, out_err_t;
+
+};
+
 struct TimeOperation2 : public TimeOperation
 {
 	TimeOperation2(Operation2<F> &op, VolumeSet &in, VolumeSet &in2, VolumeSet &out, int dt, float beta = 1.0);

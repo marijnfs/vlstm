@@ -47,6 +47,7 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 
 int main(int argc, char **argv) {
 	Log logger("log.txt");
+	Handler::set_device(0);
 
 	Database db("/home/cvlstm/data/exp3.db");
 	cout << db.count("exp") << endl;
@@ -72,19 +73,11 @@ int main(int argc, char **argv) {
 
 	random_next_step_subvolume(db, input, target);
 
-	//Fast-weight network
-	TensorShape action_input{train_n, 3, 1, 1};
-	Network<float> fastweight_net(action_input);
-
-	return 0;
-
 	//VolumeShape shape{100, 1, 512, 512};
-	Handler::set_device(0);
 
 
 	//int kg(3), ko(3), c(1);
 	int kg(7), ko(7), c(1);
-
 
 	string netname = "net.save";
 	VolumeNetwork net(train_shape);
@@ -124,6 +117,26 @@ int main(int argc, char **argv) {
 	logger << "input volume shape " << train_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
+
+
+	//Fast-weight network
+	TensorShape action_input{train_n, 3, 1, 1};
+	Network<float> fastweight_net(action_input);
+	fastweight_net.add_conv(16, 1, 1);
+	fastweight_net.add_tanh();
+	fastweight_net.add_conv(32, 1, 1);
+	fastweight_net.add_tanh();
+	fastweight_net.add_conv(64, 1, 1);
+	fastweight_net.add_tanh();
+	fastweight_net.add_conv(net.param.n, 1, 1);
+	fastweight_net.finish();
+
+	logger << "begin description\n";
+	logger << "input volume shape " << train_shape << "\n";
+	fastweight_net.describe(logger.file);
+	logger << "end description\n";
+
+	return 0;
 
 	int epoch(0);
 	float last_loss = 9999999.;

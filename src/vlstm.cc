@@ -4,16 +4,168 @@
 
 using namespace std;
 
+SubVolumeOperation::SubVolumeOperation(VolumeShape in) :
+in_shape(in),
+vin(0),	vout(0),
+T(in.z)
+{}
+
+
+
+void SubVolumeOperation::update(float lr) {
+	for (auto &p : parameters) {
+		p->update(lr);
+		//cout << p->grad_to_vector() << endl;
+	}
+
+}
+
+void SubVolumeOperation::clear() {
+	for (auto& v : volumes) {
+		 // if (v.first != "x" && v.first != "h")
+	 	v.second->x.zero();
+		//v.second->x.zero();
+		v.second->diff.zero();
+	}
+}
+
+void SubVolumeOperation::clear_grad() {
+	for (auto& p : parameters)
+		p->zero_grad();
+}
+void SubVolumeOperation::scale_grad() {
+	for (auto &p : parameters)
+		p->scale_grad(1.0);
+}
+
+
+void SubVolumeOperation::add_volume(string name, VolumeShape shape, VolumeSetMap *reuse) {
+	if (reuse) {
+		if (!(*reuse).count(name))
+			(*reuse)[name] = new VolumeSet(shape);
+		volumes[name] = new VolumeSet(shape, *(*reuse)[name]);
+	}
+	else
+		volumes[name] = new VolumeSet(shape);
+}
+
+void SubVolumeOperation::add_volume(string name, VolumeSet &set) {
+	volumes[name] = &set;
+}
+
+bool SubVolumeOperation::exists(string name) {
+	return volumes.count(name);
+}
+
+void SubVolumeOperation::init_normal(F mean, F std) {
+	for (auto &p : parameters)
+		p->init_normal(mean, std);
+}
+
+void SubVolumeOperation::init_uniform(F var) {
+	for (auto &p : parameters)
+		p->init_uniform(var);
+}
+
+void SubVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
+	for (auto &p : parameters)
+		p->register_params(params, grads);
+}
+
+void SubVolumeOperation::forward_dry_run() {
+	for (auto &op : operations)
+		op->forward_dry_run();
+}
+
+void SubVolumeOperation::forward() {
+//	int T(in_shape.z);
+	for (int t(0); t < T; ++t)
+		for (auto &op : operations) {
+			op->forward(t);
+		}
+
+}
+
+void SubVolumeOperation::backward() {
+	// cout << "back" << endl;
+	for (int t(T - 1); t >= 0; --t)
+		for (int n(operations.size() - 1); n >= 0; --n) {
+			operations[n]->backward(t);
+		}
+	// // cout << "scaling" << endl;
+	// for (auto &p : parameters)
+	// 	//p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
+	// 	p->scale_grad(1.0 / sqrt(in_shape.z * in_shape.w * in_shape.h));
+	// cout << "done" << endl;
+}
+
+void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
+	VolumeSet &in(*volumes[ins]);
+
+	bool first(false);
+	if (!exists(outs)) {
+		add_volume(outs, output_shape(in.shape, op), reuse);
+		first = true;
+	}
+	VolumeSet &out(*volumes[outs]);
+
+	int dt = delay ? 1 : 0;
+
+	operations.push_back(new TimeOperation1(op, in, out, dt, beta));
+	try {
+		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
+		// cout << "a parameter" << endl;
+	} catch (const std::bad_cast& e) {
+		// cout << "not a parameter" << endl;
+	}
+}
+
+
+void SubVolumeOperation::add_op_rollout(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
+	VolumeSet &in(*volumes[ins]);
+
+	bool first(false);
+	if (!exists(outs)) {
+		add_volume(outs, output_shape(in.shape, op), reuse);
+		first = true;
+	}
+	VolumeSet &out(*volumes[outs]);
+
+	int dt = delay ? 1 : 0;
+
+	operations.push_back(new TimeOperation1Rollout(op, in, out, dt, beta));
+	try {
+		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
+		// cout << "a parameter" << endl;
+	} catch (const std::bad_cast& e) {
+		// cout << "not a parameter" << endl;
+	}
+}
+
+void SubVolumeOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
+	VolumeSet &in(*volumes[ins]);
+	VolumeSet &in2(*volumes[in2s]);
+
+	bool first(false);
+	if (!exists(outs)) {
+		add_volume(outs, output_shape(in.shape, op), reuse);
+		first = true;
+	}
+	VolumeSet &out(*volumes[outs]);
+
+	int dt = delay ? 1 : 0;
+	operations.push_back(new TimeOperation2(op, in, in2, out, dt, beta));
+}
+
+
+
 //LSTM operation
 LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap *reuse) :
-	T(in.z),
+	SubVolumeOperation(in),
 	xi(in.c, c, kg, kg), hi(c, c, kg, kg), //input gate
 	xr(in.c, c, kg, kg), hr(c, c, kg, kg), //remember gate (forget gates dont make sense!)
 	xs(in.c, c, kg, kg), hs(c, c, kg, kg), //cell input
-	xo(in.c, c, ko, ko), ho(c, c, ko, ko), //co(c, c, ko, ko), //output gate
-	in_shape(in),
-	vin(0),
-	vout(0)
+	xo(in.c, c, ko, ko), ho(c, c, ko, ko) //co(c, c, ko, ko), //output gate
 {
 	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
 	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
@@ -27,6 +179,28 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 	xi.bias.init_normal(1., 0.0);
 }
 
+//LSTM operation
+LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout, VolumeSetMap *reuse) :
+	SubVolumeOperation(in),
+	xi(in.c, c, kg, kg, in.z), hi(c, c, kg, kg, in.z), //input gate
+	xr(in.c, c, kg, kg, in.z), hr(c, c, kg, kg, in.z), //remember gate (forget gates dont make sense!)
+	xs(in.c, c, kg, kg, in.z), hs(c, c, kg, kg, in.z), //cell input
+	xo(in.c, c, ko, ko, in.z), ho(c, c, ko, ko, in.z) //co(c, c, ko, ko), //output gate
+{
+	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
+	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
+
+	if (rollout)
+		add_operations_rollout(reuse);
+	else
+		add_operations(reuse);
+
+	vin = volumes["x"];
+	vout = volumes["h"];
+
+	xr.bias.init_normal(1., 0.0);
+	xi.bias.init_normal(1., 0.0);
+}
 
 void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	bool DELAY(true), NOW(false);
@@ -83,38 +257,38 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 
 }
 
-void LSTMOperation::add_volume(string name, VolumeShape shape, VolumeSetMap *reuse) {
-	if (reuse) {
-		if (!(*reuse).count(name))
-			(*reuse)[name] = new VolumeSet(shape);
-		volumes[name] = new VolumeSet(shape, *(*reuse)[name]);
-	}
-	else
-		volumes[name] = new VolumeSet(shape);
+
+void LSTMOperation::add_operations_rollout(VolumeSetMap *reuse) {
+	bool DELAY(true), NOW(false);
+
+	//Start
+	add_op_rollout("x", "i", xi, NOW, reuse);
+	add_op_rollout("h", "i", hi, DELAY, reuse);
+	add_op("i", "i", sig, NOW, reuse, 0.0);
+
+	add_op_rollout("x", "r", xr, NOW, reuse);
+	add_op_rollout("h", "r", hr, DELAY, reuse);
+	add_op("r", "r", sig, NOW, reuse, 0.0);
+
+	add_op_rollout("x", "s", xs, NOW, reuse);
+	add_op_rollout("h", "s", hs, DELAY, reuse);
+	add_op("s", "s", tan, NOW, reuse, 0.0);
+
+	add_op("s", "i", "c", gate, NOW, reuse);
+	add_op("c", "r", "c", gate, DELAY, reuse);
+	add_op("c", "fc", tan, NOW, reuse);
+	//add_op("c", "fc", sig, NOW, reuse);
+
+	add_op_rollout("x", "o", xo, NOW, reuse);
+	add_op_rollout("h", "o", ho, DELAY, reuse);
+	//add_op("c", "o", co, reuse);
+	add_op("o", "o", sig, NOW, reuse, 0.0);
+
+	add_op("fc", "o", "h", gate, NOW, reuse);
+
+	 // add_op("x", "h", xo, NOW, reuse);
 }
 
-void LSTMOperation::add_volume(string name, VolumeSet &set) {
-	volumes[name] = &set;
-}
-
-bool LSTMOperation::exists(string name) {
-	return volumes.count(name);
-}
-
-void LSTMOperation::init_normal(F mean, F std) {
-	for (auto &p : parameters)
-		p->init_normal(mean, std);
-}
-
-void LSTMOperation::init_uniform(F var) {
-	for (auto &p : parameters)
-		p->init_uniform(var);
-}
-
-void LSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
-	for (auto &p : parameters)
-		p->register_params(params, grads);
-}
 
 void LSTMOperation::share(LSTMOperation &o){
 	xi.share(o.xi);
@@ -128,95 +302,79 @@ void LSTMOperation::share(LSTMOperation &o){
 	// co.share(o.co); //output gate
 }
 
-void LSTMOperation::update(float lr) {
-	for (auto &p : parameters) {
-		p->update(lr);
-		//cout << p->grad_to_vector() << endl;
-	}
 
-}
+LSTMShiftOperation::LSTMShiftOperation(VolumeShape in, int kg, int ko, int c, int dx, int dy, VolumeSetMap *reuse) :
+	SubVolumeOperation(in),
+	xi(in.c, c, kg, kg, dx, dy), hi(c, c, kg, kg, dx, dy), //input gate
+	xr(in.c, c, kg, kg, dx, dy), hr(c, c, kg, kg, dx, dy), //remember gate (forget gates dont make sense!)
+	xs(in.c, c, kg, kg, dx, dy), hs(c, c, kg, kg, dx, dy), //cell input
+	xo(in.c, c, ko, ko, dx, dy), ho(c, c, ko, ko, dx, dy) //co(c, c, ko, ko), //output gate
+{
+	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
+	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
 
-void LSTMOperation::clear() {
-	for (auto& v : volumes) {
-		 // if (v.first != "x" && v.first != "h")
-	 	v.second->x.zero();
-		//v.second->x.zero();
-		v.second->diff.zero();
-	}
-}
+	add_operations(reuse);
 
-void LSTMOperation::clear_grad() {
-	for (auto& p : parameters)
-		p->zero_grad();
-}
+	vin = volumes["x"];
+	vout = volumes["h"];
 
-void LSTMOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
-	VolumeSet &in(*volumes[ins]);
-
-	bool first(false);
-	if (!exists(outs)) {
-		add_volume(outs, output_shape(in.shape, op), reuse);
-		first = true;
-	}
-	VolumeSet &out(*volumes[outs]);
-
-	int dt = delay ? 1 : 0;
-
-	operations.push_back(new TimeOperation1(op, in, out, dt, beta));
-	try {
-		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
-		// cout << "a parameter" << endl;
-	} catch (const std::bad_cast& e) {
-		// cout << "not a parameter" << endl;
-	}
-}
-
-void LSTMOperation::add_op(string ins, string in2s, string outs, Operation2<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
-	VolumeSet &in(*volumes[ins]);
-	VolumeSet &in2(*volumes[in2s]);
-
-	bool first(false);
-	if (!exists(outs)) {
-		add_volume(outs, output_shape(in.shape, op), reuse);
-		first = true;
-	}
-	VolumeSet &out(*volumes[outs]);
-
-	int dt = delay ? 1 : 0;
-	operations.push_back(new TimeOperation2(op, in, in2, out, dt, beta));
+	xr.bias.init_normal(1., 0.0);
+	xi.bias.init_normal(1., 0.0);
 }
 
 
-void LSTMOperation::forward() {
-//	int T(in_shape.z);
-	for (int t(0); t < T; ++t)
-		for (auto &op : operations) {
-			op->forward(t);
-		}
+void LSTMShiftOperation::add_operations(VolumeSetMap *reuse) {
+	bool DELAY(true), NOW(false);
+	// add_op("x", "i", xi, NOW, reuse);
+	// add_op("h", "i", hi, DELAY, reuse);
+	// add_op("i", "fi", sig, NOW, reuse);
 
-}
+	// add_op("x", "r", xr, NOW, reuse);
+	// add_op("h", "r", hr, DELAY, reuse);
+	// add_op("r", "fr", sig, NOW, reuse);
 
-void LSTMOperation::backward() {
-	// cout << "back" << endl;
-	for (int t(T - 1); t >= 0; --t)
-		for (int n(operations.size() - 1); n >= 0; --n) {
-			operations[n]->backward(t);
-		}
-	// // cout << "scaling" << endl;
-	// for (auto &p : parameters)
-	// 	//p->scale_grad(1.0 / (in_shape.z * in_shape.w * in_shape.h));
-	// 	p->scale_grad(1.0 / sqrt(in_shape.z * in_shape.w * in_shape.h));
-	// cout << "done" << endl;
-}
+	// add_op("x", "s", xs, NOW, reuse);
+	// add_op("h", "s", hs, DELAY, reuse);
+	// add_op("s", "fs", tan, NOW, reuse);
 
-void LSTMOperation::scale_grad() {
-	for (auto &p : parameters)
-		p->scale_grad(1.0);
-}
+	// add_op("fs", "fi", "c", gate, NOW, reuse);
+	// add_op("c", "fr", "c", gate, DELAY, reuse);
+	// // add_op("c", "fc", tan, reuse);
+	// add_op("c", "fc", sig, NOW, reuse);
 
-void LSTMOperation::forward_dry_run() {
-	for (auto &op : operations)
-		op->forward_dry_run();
+	// add_op("x", "o", xo, NOW, reuse);
+	// add_op("h", "o", ho, DELAY, reuse);
+	// //add_op("c", "o", co, reuse);
+	// add_op("o", "fo", sig, NOW, reuse);
+
+	// add_op("fc", "fo", "h", gate, NOW, reuse);
+
+	//Start
+	add_op("x", "i", xi, NOW, reuse);
+	add_op("h", "i", hi, DELAY, reuse);
+	add_op("i", "i", sig, NOW, reuse, 0.0);
+
+	add_op("x", "r", xr, NOW, reuse);
+	add_op("h", "r", hr, DELAY, reuse);
+	add_op("r", "r", sig, NOW, reuse, 0.0);
+
+	add_op("x", "s", xs, NOW, reuse);
+	add_op("h", "s", hs, DELAY, reuse);
+	add_op("s", "s", tan, NOW, reuse, 0.0);
+
+	add_op("s", "i", "c", gate, NOW, reuse);
+	add_op("c", "r", "c", gate, DELAY, reuse);
+	add_op("c", "fc", tan, NOW, reuse);
+	//add_op("c", "fc", sig, NOW, reuse);
+
+	add_op("x", "o", xo, NOW, reuse);
+	add_op("h", "o", ho, DELAY, reuse);
+	//add_op("c", "o", co, reuse);
+	add_op("o", "o", sig, NOW, reuse, 0.0);
+
+	add_op("fc", "o", "h", gate, NOW, reuse);
+
+	 // add_op("x", "h", xo, NOW, reuse);
 }
 
 
