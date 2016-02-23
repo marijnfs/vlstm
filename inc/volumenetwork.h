@@ -23,7 +23,7 @@ struct VolumeNetwork {
 	void init_normal(float mean, float std);
 	void init_uniform(float std);
 	void align_params();
-	void position_params(float *pos_param, float *pos_grad);
+	void position_params(float *pos_param, float *pos_fast_param, float *pos_grad);
 
 	Volume &input();
 	Volume &output();
@@ -31,6 +31,7 @@ struct VolumeNetwork {
 	VolumeShape output_shape() {return last(shapes);}
 
 	void add_vlstm(int kg, int ko, int c);
+	void add_univlstm(int kg, int ko, int c);
 	void add_fc(int c, float dropout=0.0);
 	void add_softmax();
 	void add_tanh();
@@ -40,12 +41,12 @@ struct VolumeNetwork {
 	void load(std::string path);
 	void describe(std::ostream &out);
 
-	std::vector<CudaPtr<F>> params;
+	std::vector<CudaPtr<F>> params, fast_params;
 	std::vector<CudaPtr<F>> grads;
 
-	CudaVec param, grad;
+	CudaVec param, fast_param, grad;
 	CudaVec a, b, c, d, e, rmse;
-	int n_params;
+	int n_params, n_fast_params;
 
 
 	std::vector<VolumeOperation*> operations;

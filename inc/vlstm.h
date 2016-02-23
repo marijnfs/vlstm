@@ -21,7 +21,7 @@ struct SubVolumeOperation {
  	void add_volume(std::string name, VolumeShape shape, VolumeSetMap *reuse = 0);
 	void add_volume(std::string name, VolumeSet &set);
 	bool exists(std::string name);
-	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads);
 
  	virtual void forward_dry_run();
  	virtual void forward();
@@ -103,7 +103,7 @@ struct VLSTMOperation : public VolumeOperation {
 	void backward(VolumeSet &in, VolumeSet &out);
 
 	void forward_dry_run(Volume &in, Volume &out);
-	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads);
 	VolumeShape output_shape(VolumeShape s);
 
 	void sharing();

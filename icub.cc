@@ -113,7 +113,7 @@ int main(int argc, char **argv) {
 	  net.load(argv[1]);
 	}
 
-	logger << "begin description\n";
+	logger << "begin net description\n";
 	logger << "input volume shape " << train_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
@@ -128,15 +128,15 @@ int main(int argc, char **argv) {
 	fastweight_net.add_tanh();
 	fastweight_net.add_conv(64, 1, 1);
 	fastweight_net.add_tanh();
-	fastweight_net.add_conv(net.param.n, 1, 1);
+	cout << "== " << net.fast_param.n << " " << train_n << endl;
+	fastweight_net.add_conv(net.fast_param.n / train_n, 1, 1);
 	fastweight_net.finish();
+	fastweight_net.init_uniform(.1);
 
-	logger << "begin description\n";
+	logger << "begin fastweight description\n";
 	logger << "input volume shape " << train_shape << "\n";
 	fastweight_net.describe(logger.file);
 	logger << "end description\n";
-
-	return 0;
 
 	int epoch(0);
 	float last_loss = 9999999.;
@@ -150,12 +150,13 @@ int main(int argc, char **argv) {
 
 
 	while (true) {
-	  Timer total_timer;
+	    Timer total_timer;
 		net.input().draw_slice("slice.png",0);
 
 		Timer ftimer;
 		net.forward();
 		cout << "forward took:" << ftimer.since() << endl;
+		return 0;
 
 		float loss = net.calculate_loss(target);
 		logger << "epoch: " << epoch << ": loss " << (loss / train_shape.size()) << "\n";

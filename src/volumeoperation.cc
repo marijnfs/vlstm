@@ -62,8 +62,8 @@ void FCVolumeOperation::init_uniform(float std) {
 	op.init_uniform(std);
 }
 
-void FCVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
-	op.register_params(params, grads);
+void FCVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads) {
+	op.register_params(params, fast_params, grads);
 }
 
 VolumeShape FCVolumeOperation::output_shape(VolumeShape s) {

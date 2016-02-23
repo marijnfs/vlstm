@@ -67,9 +67,9 @@ void SubVolumeOperation::init_uniform(F var) {
 		p->init_uniform(var);
 }
 
-void SubVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
+void SubVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads) {
 	for (auto &p : parameters)
-		p->register_params(params, grads);
+		p->register_params(params, fast_params, grads);
 }
 
 void SubVolumeOperation::forward_dry_run() {
@@ -479,9 +479,9 @@ void VLSTMOperation::init_uniform(F std) {
 		o->init_uniform(std);
 }
 
-void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {
+void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads) {
 	for (auto &o : operations)
-		o->register_params(params, grads);
+		o->register_params(params, fast_params, grads);
 
 	// operations[0]->register_params(params, grads);
 	// operations[2]->register_params(params, grads);
@@ -550,18 +550,19 @@ void UniVLSTMOperation::forward(Volume &in, Volume &out) {
 void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 	// operations[0]->clear_grad();
 	// operations[2]->clear_grad();
+	vector<Direction> directions={ZF, XF, XB, YF, YB};
 
 	for (size_t i(0); i < operations.size(); ++i) {
 		//forward
 		operations[i]->clear_grad();
 		operations[i]->clear();
-		// unidivide(in.x, operations[i]->input().x, i);
+		divide(in.x, operations[i]->input().x, directions[i]);
 		operations[i]->forward();
 
 		//backward
 		// unidivide(out.diff, operations[i]->output().diff, i);
 		operations[i]->backward();
-		// unicombine(operations[i]->input().diff, in.diff, i);
+		combine(operations[i]->input().diff, in.diff, directions[i]);
 		// operations[i]->scale_grad();
 	}
 	// operations[0]->scale_grad();

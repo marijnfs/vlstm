@@ -14,7 +14,7 @@ struct VolumeOperation {
 	virtual void forward_dry_run(Volume &in, Volume &out) {}
 	virtual void init_normal(float mean, float std) {}
 	virtual void init_uniform(float std) {}
-	virtual void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads) {}
+	virtual void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads) {}
 	virtual void sharing() {}
 	virtual void describe(std::ostream &out){}
 };
@@ -30,7 +30,7 @@ struct FCVolumeOperation : public VolumeOperation {
 
 	void init_normal(float mean, float std);
 	void init_uniform(float std);
-	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &grads);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads);
 	VolumeShape output_shape(VolumeShape s);
 	void describe(std::ostream &out) { out << "fc " << tin.c << " " << tout.c; }
 

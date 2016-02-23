@@ -51,30 +51,43 @@ void VolumeNetwork::finish() {
 
 void VolumeNetwork::register_params() {
 	for (auto &o : operations)
-		o->register_params(params, grads);
+		o->register_params(params, fast_params, grads);
 
  	n_params = 0;
 	for (auto &p : params)
 		n_params += p.n;
+
+	n_fast_params = 0;
+	for (auto &p : fast_params)
+		n_fast_params += p.n;
 }
 
 void VolumeNetwork::align_params() {
 	param.resize(n_params);
+	fast_param.resize(n_fast_params);
 	grad.resize(n_params);
 
 	for (auto &p : params)
 		cudaFree(*(p.ptr));
+	for (auto &p : fast_params)
+		cudaFree(*(p.ptr));
 	for (auto &g : grads)
 		cudaFree(*(g.ptr));
 
-	position_params(param.data, grad.data);
+	position_params(param.data, fast_param.data, grad.data);
 	cout << "n params: " << n_params << endl;
 	//throw "";
 }
 
-void VolumeNetwork::position_params(float *pos_param, float *pos_grad) {
+void VolumeNetwork::position_params(float *pos_param, float *pos_fast_param, float *pos_grad) {
 	float *ptr = pos_param;
 	for (auto &p : params) {
+		*(p.ptr) = ptr;
+		ptr += p.n;
+	}
+
+	ptr = pos_fast_param;
+	for (auto &p : fast_params) {
 		*(p.ptr) = ptr;
 		ptr += p.n;
 	}
@@ -84,7 +97,6 @@ void VolumeNetwork::position_params(float *pos_param, float *pos_grad) {
 		*(g.ptr) = ptr;
 		ptr += g.n;
 	}
-
 }
 
 void VolumeNetwork::update(float lr) {
@@ -139,6 +151,18 @@ void VolumeNetwork::add_vlstm(int kg, int ko, int c) {
 	//cout << "adding: " << last(shapes) << " " << shape << endl;
 
 	auto vlstm = new VLSTMOperation(last(shapes), kg, ko, c, vsm);
+	auto shape = vlstm->output_shape(last(shapes));
+
+	operations.push_back(vlstm);
+	shapes.push_back(shape);
+	volumes.push_back(new VolumeSet(shape));
+}
+
+void VolumeNetwork::add_univlstm(int kg, int ko, int c) {
+	cout << "adding unidirectional vlstm" << endl;
+	//cout << "adding: " << last(shapes) << " " << shape << endl;
+
+	auto vlstm = new UniVLSTMOperation(last(shapes), kg, ko, c, vsm);
 	auto shape = vlstm->output_shape(last(shapes));
 
 	operations.push_back(vlstm);
