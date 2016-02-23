@@ -504,14 +504,15 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 	// for (size_t i(0); i < 6; ++i)
 		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
 
-	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm));
+	bool rollout(true);
+	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, rollout, &vsm));
 	//operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm)); //only forward
 
-	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm));
-	operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c,  1, 0, &vsm));
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, -1, 0, &vsm));
 
-	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
-	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0,  1, &vsm));
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, -1, &vsm));
 
 	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
 	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
@@ -529,11 +530,12 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 
 
 void UniVLSTMOperation::forward(Volume &in, Volume &out) {
+	vector<Direction> directions={ZF, XF, XB, YF, YB};
 	for (size_t i(0); i < operations.size(); ++i) {
 		operations[i]->clear();
-		// unidivide(in, operations[i]->input().x, i);
+		divide(in, operations[i]->input().x, directions[i]);
 		operations[i]->forward();
-		// unicombine(operations[i]->output().x, out, i);
+		combine(operations[i]->output().x, out, directions[i]);
 		// if (i == 0) {
 		// 	operations[0]->volumes["c"]->x.draw_slice("c1.png", 1);
 		// 	operations[0]->volumes["c"]->x.draw_slice("c3.png", 3);

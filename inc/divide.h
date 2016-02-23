@@ -4,6 +4,15 @@
 #include <cuda.h>
 #include "volume.h"
 
+enum Direction {
+	ZF, // X/Y/B - FORWARD/BACKWARD
+	ZB,
+	XF,
+	XB,
+	YF,
+	YB
+};
+
 __device__ __forceinline__ int get_index(int X, int Y, int Z, int C, int x, int y, int z) {
 	return z * (C * X * Y) + x * Y + y; //CWH, as cudnn
 }

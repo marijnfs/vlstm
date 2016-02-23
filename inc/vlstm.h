@@ -117,7 +117,7 @@ struct VLSTMOperation : public VolumeOperation {
 	int kg, ko;
 	int c;
 
-	std::vector<LSTMOperation*> operations;
+	std::vector<SubVolumeOperation*> operations;
 };
 
 struct UniVLSTMOperation : public VLSTMOperation {
