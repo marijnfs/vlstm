@@ -92,16 +92,17 @@ int main(int argc, char **argv) {
 
 	//Marijn net
 	net.add_fc(8);
-	net.add_vlstm(7, 7, 4);
+	net.add_univlstm(7, 7, 4);
 	//net.add_fc(32);
 	//net.add_tanh();
-	net.add_vlstm(7, 7, 4);
+
+	net.add_univlstm(7, 7, 4);
 	//net.add_fc(32);
 	//net.add_tanh();
 	//net.add_vlstm(7, 7, 32);
 	net.add_fc(32);
 	net.add_tanh();
-	net.add_fc(2);
+	net.add_fc(3);
 	net.add_softmax();
 
 	net.finish();
