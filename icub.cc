@@ -21,7 +21,7 @@ inline void print_last(vector<float> vals, int n) {
 	cout << endl;
 }
 
-inline void random_next_step_subvolume(Database &db, Volume &input, Volume &target) {
+inline void random_next_step_subvolume(Database &db, Volume &input, Volume &target, Tensor<float> &actions) {
 	int N = db.count("img");
 	int diff = 1;
 	int n = input.shape.z;
@@ -42,6 +42,10 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 			copy_to_gpu<>(img.data().data(), input.slice(i),  img.data().size());
 		if (i >= diff)
 			copy_to_gpu<>(img.data().data(), target.slice(i-diff), img.data().size());
+		if (i < n) {
+			copy_to_gpu<>(action.a().data(), actions.ptr() + i * action.a().size(), action.a().size());
+		}
+
 	}
 }
 
@@ -68,15 +72,14 @@ int main(int argc, char **argv) {
 	cout << "whc: " << img_w << " " << img_h << " " << img_c << endl;
 	// cout << img.data()[10] << endl;
 
-	VolumeShape train_shape{train_n, img_c, img_w, img_h};
-	Volume input(train_shape), target(train_shape);
 
-	random_next_step_subvolume(db, input, target);
 
 	//VolumeShape shape{100, 1, 512, 512};
 
 
 	//int kg(3), ko(3), c(1);
+	VolumeShape train_shape{train_n, img_c, img_w, img_h};
+
 	int kg(7), ko(7), c(1);
 
 	string netname = "net.save";
@@ -100,9 +103,9 @@ int main(int argc, char **argv) {
 	//net.add_fc(32);
 	//net.add_tanh();
 	//net.add_vlstm(7, 7, 32);
-	net.add_fc(32);
-	net.add_tanh();
-	net.add_fc(3);
+	// net.add_fc(32);
+	// net.add_tanh();
+	net.add_fc(img_c);
 	net.add_softmax();
 
 	net.finish();
@@ -122,6 +125,8 @@ int main(int argc, char **argv) {
 
 	//Fast-weight network
 	TensorShape action_input{train_n, 3, 1, 1};
+	Tensor<float> actions_tensor(action_input);
+
 	Network<float> fastweight_net(action_input);
 	fastweight_net.add_conv(16, 1, 1);
 	fastweight_net.add_tanh();
@@ -149,20 +154,31 @@ int main(int argc, char **argv) {
 	int burnin(50);
 
 
+	Volume input(train_shape), target(train_shape);
+
 
 	while (true) {
+		random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
+
+		Timer fasttimer;
+		fastweight_net.forward();
+		cout << "fast forward took:" << fasttimer.since() << endl;
+
+		net.set_fast_weights(fastweight_net.output());
+
 	    Timer total_timer;
 		net.input().draw_slice("slice.png",0);
 
 		Timer ftimer;
 		net.forward();
 		cout << "forward took:" << ftimer.since() << endl;
-		return 0;
 
+		cout << net.input().shape << " " << target.shape << endl;
 		float loss = net.calculate_loss(target);
 		logger << "epoch: " << epoch << ": loss " << (loss / train_shape.size()) << "\n";
 		last_loss = loss;
 		net.save(netname);
+		return 0;
 
 		Timer timer;
 		net.backward();

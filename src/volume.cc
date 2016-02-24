@@ -73,6 +73,8 @@ void Volume::fill(F val) {
 }
 
 void Volume::from_volume(Volume &other) {
+	cout << shape << " " << other.shape << endl;
+	cout << shape.size() << " " << other.shape.size() << endl;
 	if (size() != other.size()) {
  			throw StringException("sizes don't match");
 	}
@@ -119,6 +121,7 @@ void Volume::draw_slice(string filename, int slice, float th) {
 	vector<F> data = to_vector();
 	if (th > 0.0)	thresholding(data, th);
 
+	cout << "drawing " << shape << endl;
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
 }
 

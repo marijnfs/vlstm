@@ -41,6 +41,9 @@ struct VolumeNetwork {
 	void load(std::string path);
 	void describe(std::ostream &out);
 
+	void set_fast_weights(Tensor<float> &weights);
+
+
 	std::vector<CudaPtr<F>> params, fast_params;
 	std::vector<CudaPtr<F>> grads;
 
