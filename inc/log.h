@@ -5,6 +5,7 @@
 #include <fstream>
 #include <ctime>
 #include <iostream>
+#include <vector>
 
 std::string date_string();
 bool exists(std::string fileName);
@@ -31,6 +32,12 @@ inline Log &operator<<(Log &out, T const &in) {
 	out.file << in;
 	out.file.flush();
 	return out;
+}
+
+inline void print_last(std::vector<float> vals, int n) {
+	for (size_t i(vals.size() - n); i < vals.size(); ++i)
+		std::cout << vals[i] << " ";
+	std::cout << std::endl;
 }
 
 #endif

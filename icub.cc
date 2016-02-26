@@ -12,14 +12,9 @@
 #include "divide.h"
 #include "database.h"
 #include "img.pb.h"
+#include "trainer.h"
 
 using namespace std;
-
-inline void print_last(vector<float> vals, int n) {
-	for (size_t i(vals.size() - n); i < vals.size(); ++i)
-		cout << vals[i] << " ";
-	cout << endl;
-}
 
 inline void random_next_step_subvolume(Database &db, Volume &input, Volume &target, Tensor<float> &actions) {
 	int N = db.count("img");
@@ -146,8 +141,6 @@ int main(int argc, char **argv) {
 
 	int epoch(0);
 	float last_loss = 9999999.;
-	float base_lr = .01;
-	float const LR_DECAY = pow(.5, 1.0 / 100);
 
 	int n_sums(50); // marijn trick vars
 	int sum_counter(0);
@@ -156,6 +149,7 @@ int main(int argc, char **argv) {
 
 	Volume input(train_shape), target(train_shape);
 
+	Trainer trainer(net, .01, .00001, 40);
 
 	while (true) {
 		random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
@@ -178,92 +172,17 @@ int main(int argc, char **argv) {
 		logger << "epoch: " << epoch << ": loss " << (loss / train_shape.size()) << "\n";
 		last_loss = loss;
 		net.save(netname);
-		return 0;
 
 		Timer timer;
 		net.backward();
 		cout << "backward took:" << timer.since() << "\n\n";
 		net.grad *= train_shape.size(); //loss is counter for every pixel, normalise
 
-		//SGD
-		// net.grad *= .00001;
-		// net.param += net.grad;
-
-		//RMS PROP
-		float decay = epoch < 4 ? 0.5 : 0.9;
-		float mean_decay = 0.9;
-		float eps = .00001;
-		//float lr = 0.001;
-		//float lr = 0.01;
-
-		// float lr = epoch < 4 ? .0001 : .001;
-
-		float lr = .00001 + base_lr;
-		base_lr *= LR_DECAY;
-		net.a = net.grad;
-		net.a *= net.a;
-		net.rmse *= decay;
-		net.a *= (1.0 - decay);
-		net.rmse += net.a;
-
-		net.b = net.rmse;
-		net.b.sqrt();
-		net.b += eps;
-
-		net.c = net.grad;
-		net.c /= net.b;
-
-		//Marijn Trick
-
-		//net.d = net.c;
-		//net.d *= (1.0 - mean_decay);
-		//net.e *= mean_decay;
-		//net.e += net.d;
-
-		//net.d = net.e;
-		//net.d.abs();
-		//net.c *= net.d;
-
-		//Marijn Trick 2
-
-		// if (epoch >= burnin) {
-		//   net.d = net.param;
-		//   net.d *= (1.0 / n_sums);
-		//   net.e += net.d;
-		//   ++sum_counter;
-
-		//   if (sum_counter == n_sums) {
-		//     net.param = net.e;
-		//     net.e.zero();
-		//     net.c.zero();
-		//     sum_counter = 0;
-		//     net.save("mean.net");
-		//   }
-
-		// }
-
-		//Momentum
-
-		net.d = net.c;
-		net.d *= (1.0 - mean_decay);
-		net.e *= mean_decay;
-		net.e += net.d;
-		net.c = net.e;
-
-		//update
-		//net.c.clip(1.);
-		net.c *= lr;
-		net.param += net.c;
-
-		print_last(net.grad.to_vector(), 10);
-		print_last(net.rmse.to_vector(), 10);
-		print_last(net.e.to_vector(), 10);
-		print_last(net.param.to_vector(), 10);
-
+		trainer.update(&net.param, net.grad);
 
 		++epoch;
 		cout << "epoch time: " << total_timer.since() << endl;
-		// return 0;
+		return 0;
 	}
 
 	cudaDeviceSynchronize();
