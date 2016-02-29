@@ -67,9 +67,9 @@ void SubVolumeOperation::init_uniform(F var) {
 		p->init_uniform(var);
 }
 
-void SubVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads) {
+void SubVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads) {
 	for (auto &p : parameters)
-		p->register_params(params, fast_params, grads);
+		p->register_params(params, fast_params, grads, fast_grads);
 }
 
 void SubVolumeOperation::forward_dry_run() {
@@ -479,9 +479,9 @@ void VLSTMOperation::init_uniform(F std) {
 		o->init_uniform(std);
 }
 
-void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads) {
+void VLSTMOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads) {
 	for (auto &o : operations)
-		o->register_params(params, fast_params, grads);
+		o->register_params(params, fast_params, grads, fast_grads);
 
 	// operations[0]->register_params(params, grads);
 	// operations[2]->register_params(params, grads);

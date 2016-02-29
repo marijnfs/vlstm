@@ -40,18 +40,18 @@ void VolumeNetwork::finish() {
 	clear();
 
 	//init_normal(0, 0);
-	a.resize(param.n);
-	b.resize(param.n);
-	c.resize(param.n);
-	d.resize(param.n);
-	e.resize(param.n);
-	rmse.resize(param.n);
+	// a.resize(param.n);
+	// b.resize(param.n);
+	// c.resize(param.n);
+	// d.resize(param.n);
+	// e.resize(param.n);
+	// rmse.resize(param.n);
 	// rmse += .01;
 }
 
 void VolumeNetwork::register_params() {
 	for (auto &o : operations)
-		o->register_params(params, fast_params, grads);
+		o->register_params(params, fast_params, grads, fast_grads);
 
  	n_params = 0;
 	for (auto &p : params)
@@ -64,8 +64,10 @@ void VolumeNetwork::register_params() {
 
 void VolumeNetwork::align_params() {
 	param.resize(n_params);
-	fast_param.resize(n_fast_params);
 	grad.resize(n_params);
+
+	fast_param.resize(n_fast_params);
+	fast_grad.resize(n_fast_params);
 
 	for (auto &p : params)
 		cudaFree(*(p.ptr));
@@ -74,12 +76,17 @@ void VolumeNetwork::align_params() {
 	for (auto &g : grads)
 		cudaFree(*(g.ptr));
 
-	position_params(param.data, fast_param.data, grad.data);
+	for (auto &g : fast_grads) {
+		// cout << "ptr: " << g.ptr << " " << g.n << " " << fast_grads.size() << endl;
+		cudaFree(*(g.ptr));
+	}
+
+	position_params(param.data, fast_param.data, grad.data, fast_grad.data);
 	cout << "n params: " << n_params << endl;
 	//throw "";
 }
 
-void VolumeNetwork::position_params(float *pos_param, float *pos_fast_param, float *pos_grad) {
+void VolumeNetwork::position_params(float *pos_param, float *pos_fast_param, float *pos_grad, float *pos_fast_grad) {
 	float *ptr = pos_param;
 	for (auto &p : params) {
 		*(p.ptr) = ptr;
@@ -94,6 +101,12 @@ void VolumeNetwork::position_params(float *pos_param, float *pos_fast_param, flo
 
 	ptr = pos_grad;
 	for (auto &g : grads) {
+		*(g.ptr) = ptr;
+		ptr += g.n;
+	}
+
+	ptr = pos_fast_grad;
+	for (auto &g : fast_grads) {
 		*(g.ptr) = ptr;
 		ptr += g.n;
 	}

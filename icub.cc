@@ -61,7 +61,7 @@ int main(int argc, char **argv) {
 	int img_w = img.w();
 	int img_h = img.h();
 	int img_c = img.c();
-	int train_n = 60;
+	int train_n = 20;
 
 
 	cout << "whc: " << img_w << " " << img_h << " " << img_c << endl;
@@ -91,8 +91,8 @@ int main(int argc, char **argv) {
 	//Marijn net
 	net.add_fc(8);
 	net.add_univlstm(7, 7, 4);
-	//net.add_fc(32);
-	//net.add_tanh();
+	net.add_fc(8);
+	net.add_tanh();
 
 	net.add_univlstm(7, 7, 4);
 	//net.add_fc(32);
@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 	fastweight_net.add_conv(64, 1, 1);
 	fastweight_net.add_tanh();
 	cout << "== " << net.fast_param.n << " " << train_n << endl;
-	fastweight_net.add_conv(net.fast_param.n / train_n, 1, 1);
+	// fastweight_net.add_conv(net.fast_param.n / train_n, 1, 1);
 	fastweight_net.finish();
 	fastweight_net.init_uniform(.1);
 
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
 		fastweight_net.forward();
 		cout << "fast forward took:" << fasttimer.since() << endl;
 
-		net.set_fast_weights(fastweight_net.output());
+		// net.set_fast_weights(fastweight_net.output());
 
 	    Timer total_timer;
 		net.input().draw_slice("slice.png",0);

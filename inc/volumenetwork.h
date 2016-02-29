@@ -23,7 +23,7 @@ struct VolumeNetwork {
 	void init_normal(float mean, float std);
 	void init_uniform(float std);
 	void align_params();
-	void position_params(float *pos_param, float *pos_fast_param, float *pos_grad);
+	void position_params(float *pos_param, float *pos_fast_param, float *pos_grad, float *pos_fast_grad);
 
 	Volume &input();
 	Volume &output();
@@ -45,10 +45,10 @@ struct VolumeNetwork {
 
 
 	std::vector<CudaPtr<F>> params, fast_params;
-	std::vector<CudaPtr<F>> grads;
+	std::vector<CudaPtr<F>> grads, fast_grads;
 
-	CudaVec param, fast_param, grad;
-	CudaVec a, b, c, d, e, rmse;
+	CudaVec param, fast_param, grad, fast_grad;
+	// CudaVec a, b, c, d, e, rmse;
 	int n_params, n_fast_params;
 
 
