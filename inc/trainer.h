@@ -7,7 +7,7 @@
 
 //RMS averaged gradient with momentum
 struct Trainer {
-	Trainer(VolumeNetwork &init, float start_lr, float end_lr, float half_time);
+	Trainer(int n_params, float start_lr, float end_lr, float half_time);
 
 	void update(CudaVec *param, CudaVec &grad);
 

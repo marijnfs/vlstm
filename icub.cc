@@ -130,7 +130,7 @@ int main(int argc, char **argv) {
 	fastweight_net.add_conv(64, 1, 1);
 	fastweight_net.add_tanh();
 	cout << "== " << net.fast_param.n << " " << train_n << endl;
-	// fastweight_net.add_conv(net.fast_param.n / train_n, 1, 1);
+	fastweight_net.add_conv(net.fast_param.n / train_n, 1, 1);
 	fastweight_net.finish();
 	fastweight_net.init_uniform(.1);
 
@@ -149,7 +149,9 @@ int main(int argc, char **argv) {
 
 	Volume input(train_shape), target(train_shape);
 
-	Trainer trainer(net, .01, .00001, 40);
+	Trainer trainer(net.param.n, .01, .00001, 40);
+	Trainer fast_trainer(fastweight_net.n_params, .01, .00001, 40);
+
 
 	while (true) {
 		random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
@@ -158,7 +160,7 @@ int main(int argc, char **argv) {
 		fastweight_net.forward();
 		cout << "fast forward took:" << fasttimer.since() << endl;
 
-		// net.set_fast_weights(fastweight_net.output());
+		net.set_fast_weights(fastweight_net.output());
 
 	    Timer total_timer;
 		net.input().draw_slice("slice.png",0);
@@ -179,6 +181,9 @@ int main(int argc, char **argv) {
 		net.grad *= train_shape.size(); //loss is counter for every pixel, normalise
 
 		trainer.update(&net.param, net.grad);
+
+		net.get_fast_grads(fastweight_net.output_grad());
+		net.backward();
 
 		++epoch;
 		cout << "epoch time: " << total_timer.since() << endl;

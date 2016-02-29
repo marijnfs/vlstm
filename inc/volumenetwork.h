@@ -42,6 +42,7 @@ struct VolumeNetwork {
 	void describe(std::ostream &out);
 
 	void set_fast_weights(Tensor<float> &weights);
+	void get_fast_grads(Tensor<float> &grad_vec);
 
 
 	std::vector<CudaPtr<F>> params, fast_params;

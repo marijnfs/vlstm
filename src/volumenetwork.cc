@@ -251,6 +251,25 @@ void VolumeNetwork::set_fast_weights(Tensor<float> &weights) {
 			F *dest = (*param.ptr) + t * n;
 			F *src = weights.ptr() + t * weights.c + shift;
 
+			cout << dest << " " << src << " " << n << " " << weights.c << " " << weights.h << endl;
+			copy_gpu_to_gpu<>(src, dest, n);
+			shift += n;
+		}
+	}
+}
+
+void VolumeNetwork::get_fast_grads(Tensor<float> &grad_vec) {
+	//weights come out of network ordered weights first and then by time, while they are packed reversely
+	//we have to account for that here
+	int T = input().shape.z;
+
+	for (size_t t(0); t < T; ++t) {
+		int shift(0);
+		for (CudaPtr<F> &grad : fast_grads) {
+			int n = grad.n / T;
+			F *src = (*grad.ptr) + t * n;
+			F *dest = grad_vec.ptr() + t * grad_vec.c + shift;
+
 			copy_gpu_to_gpu<>(src, dest, n);
 			shift += n;
 		}

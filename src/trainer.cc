@@ -1,13 +1,13 @@
 #include "trainer.h"
 #include "log.h"
 
-Trainer::Trainer(VolumeNetwork &init, float start_lr_, float end_lr_, float half_time) :
-a(init.param.n),
-b(init.param.n),
-c(init.param.n),
-d(init.param.n),
-e(init.param.n),
-rmse(init.param.n),
+Trainer::Trainer(int param_n, float start_lr_, float end_lr_, float half_time) :
+a(param_n),
+b(param_n),
+c(param_n),
+d(param_n),
+e(param_n),
+rmse(param_n),
 decay(0.9),
 mean_decay(0.9),
 eps(.00001),
