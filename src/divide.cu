@@ -17,22 +17,22 @@ __global__ void divide_kernel(int X, int Y, int Z, int C, float const *in, float
 	int in_index = get_index(X, Y, Z, C, x, y, z);
 
 	switch(n){
-		case 0:
+		case ZF:
 			copy_c(in + in_index, out + get_index(X, Y, Z, C, x, y,         z), X * Y, X * Y, C);
 			break;
-		case 1:
+		case ZB:
 			copy_c(in + in_index, out + get_index(X, Y, Z, C, x, y, Z - 1 - z), X * Y, X * Y, C);
 			break;
-		case 2:
+		case XF:
 			copy_c(in + in_index, out + get_index(Z, Y, X, C, z, y,         x), X * Y, Z * Y, C);
 			break;
-		case 3:
+		case XB:
 			copy_c(in + in_index, out + get_index(Z, Y, X, C, z, y, X - 1 - x), X * Y, Z * Y, C);
 			break;
-		case 4:
+		case YF:
 			copy_c(in + in_index, out + get_index(X, Z, Y, C, x, z,         y), X * Y, X * Z, C);
 			break;
-		case 5:
+		case YB:
 			copy_c(in + in_index, out + get_index(X, Z, Y, C, x, z, Y - 1 - y), X * Y, X * Z, C);
 			break;
 		// default:
@@ -51,22 +51,22 @@ __global__ void combine_kernel(int X, int Y, int Z, int C, float *in, float cons
 	int in_index = get_index(X, Y, Z, C, x, y, z);
 
 	switch(n){
-		case 0:
+		case ZF:
 			add_c(out + get_index(X, Y, Z, C, x, y,         z), in + in_index, X * Y, X * Y, C);
 			break;
-		case 1:
+		case ZB:
 			add_c(out + get_index(X, Y, Z, C, x, y, Z - 1 - z), in + in_index, X * Y, X * Y, C);
 			break;
-		case 2:
+		case XF:
 			add_c(out + get_index(Z, Y, X, C, z, y,         x), in + in_index, Z * Y, X * Y, C);
 			break;
-		case 3:
+		case XB:
 			add_c(out + get_index(Z, Y, X, C, z, y, X - 1 - x), in + in_index, Z * Y, X * Y, C);
 			break;
-		case 4:
+		case YF:
 			add_c(out + get_index(X, Z, Y, C, x, z,         y), in + in_index, X * Z, X * Y, C);
 			break;
-		case 5:
+		case YB:
 			add_c(out + get_index(X, Z, Y, C, x, z, Y - 1 - y), in + in_index, X * Z, X * Y, C);
 			break;
 	}

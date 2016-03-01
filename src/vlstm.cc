@@ -508,11 +508,11 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, rollout, &vsm));
 	//operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm)); //only forward
 
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c,  1, 0, &vsm));
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, -1, 0, &vsm));
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm)); //both +x, for the time direction is on this axis (check divide)
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm));
 
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0,  1, &vsm));
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, -1, &vsm));
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0,  1, &vsm)); //both +y, for the time direction is on this axis (check divide)
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm));
 
 	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
 	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));

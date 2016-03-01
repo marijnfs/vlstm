@@ -45,10 +45,10 @@ struct VolumeNetwork {
 	void get_fast_grads(Tensor<float> &grad_vec);
 
 
-	std::vector<CudaPtr<F>> params, fast_params;
-	std::vector<CudaPtr<F>> grads, fast_grads;
+	std::vector<CudaPtr<F>> param_ptrs, fast_param_ptrs;
+	std::vector<CudaPtr<F>> grad_ptrs, fast_grad_ptrs;
 
-	CudaVec param, fast_param, grad, fast_grad;
+	CudaVec param_vec, fast_param_vec, grad_vec, fast_grad_vec;
 	// CudaVec a, b, c, d, e, rmse;
 	int n_params, n_fast_params;
 

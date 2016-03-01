@@ -22,6 +22,7 @@ void VolumeNetwork::backward() {
 		operations[i]->backward(*volumes[i], *volumes[i+1]);
 		operations[i]->backward_weights(*volumes[i], *volumes[i+1]);
 	}
+	grad_vec *= output_shape().size(); //loss is counter for every pixel, normalise
 }
 
 void VolumeNetwork::forward_dry_run() {
@@ -51,62 +52,60 @@ void VolumeNetwork::finish() {
 
 void VolumeNetwork::register_params() {
 	for (auto &o : operations)
-		o->register_params(params, fast_params, grads, fast_grads);
+		o->register_params(param_ptrs, fast_param_ptrs, grad_ptrs, fast_grad_ptrs);
 
  	n_params = 0;
-	for (auto &p : params)
+	for (auto &p : param_ptrs)
 		n_params += p.n;
 
 	n_fast_params = 0;
-	for (auto &p : fast_params)
+	for (auto &p : fast_param_ptrs)
 		n_fast_params += p.n;
 }
 
 void VolumeNetwork::align_params() {
-	param.resize(n_params);
-	grad.resize(n_params);
+	param_vec.resize(n_params);
+	grad_vec.resize(n_params);
 
-	fast_param.resize(n_fast_params);
-	fast_grad.resize(n_fast_params);
+	fast_param_vec.resize(n_fast_params);
+	fast_grad_vec.resize(n_fast_params);
 
-	for (auto &p : params)
+	for (auto &p : param_ptrs)
 		cudaFree(*(p.ptr));
-	for (auto &p : fast_params)
+	for (auto &p : fast_param_ptrs)
 		cudaFree(*(p.ptr));
-	for (auto &g : grads)
+
+	for (auto &g : grad_ptrs)
+		cudaFree(*(g.ptr));
+	for (auto &g : fast_grad_ptrs)
 		cudaFree(*(g.ptr));
 
-	for (auto &g : fast_grads) {
-		// cout << "ptr: " << g.ptr << " " << g.n << " " << fast_grads.size() << endl;
-		cudaFree(*(g.ptr));
-	}
-
-	position_params(param.data, fast_param.data, grad.data, fast_grad.data);
+	position_params(param_vec.data, fast_param_vec.data, grad_vec.data, fast_grad_vec.data);
 	cout << "n params: " << n_params << endl;
 	//throw "";
 }
 
 void VolumeNetwork::position_params(float *pos_param, float *pos_fast_param, float *pos_grad, float *pos_fast_grad) {
 	float *ptr = pos_param;
-	for (auto &p : params) {
+	for (auto &p : param_ptrs) {
 		*(p.ptr) = ptr;
 		ptr += p.n;
 	}
 
 	ptr = pos_fast_param;
-	for (auto &p : fast_params) {
+	for (auto &p : fast_param_ptrs) {
 		*(p.ptr) = ptr;
 		ptr += p.n;
 	}
 
 	ptr = pos_grad;
-	for (auto &g : grads) {
+	for (auto &g : grad_ptrs) {
 		*(g.ptr) = ptr;
 		ptr += g.n;
 	}
 
 	ptr = pos_fast_grad;
-	for (auto &g : fast_grads) {
+	for (auto &g : fast_grad_ptrs) {
 		*(g.ptr) = ptr;
 		ptr += g.n;
 	}
@@ -221,14 +220,14 @@ void VolumeNetwork::add_sigmoid() {
 
 void VolumeNetwork::save(std::string path) {
 	ofstream of(path, ios::binary);
-	vector<float> data = param.to_vector();
+	vector<float> data = param_vec.to_vector();
 	byte_write_vec(of, data);
 }
 
 void VolumeNetwork::load(std::string path) {
 	ifstream in(path, ios::binary);
 	vector<float> data = byte_read_vec<float>(in);
-	param.from_vector(data);
+	param_vec.from_vector(data);
 }
 
 void VolumeNetwork::describe(std::ostream &out) {
@@ -246,7 +245,7 @@ void VolumeNetwork::set_fast_weights(Tensor<float> &weights) {
 
 	for (size_t t(0); t < T; ++t) {
 		int shift(0);
-		for (CudaPtr<F> &param : fast_params) {
+		for (CudaPtr<F> &param : fast_param_ptrs) {
 			int n = param.n / T;
 			F *dest = (*param.ptr) + t * n;
 			F *src = weights.ptr() + t * weights.c + shift;
@@ -258,17 +257,17 @@ void VolumeNetwork::set_fast_weights(Tensor<float> &weights) {
 	}
 }
 
-void VolumeNetwork::get_fast_grads(Tensor<float> &grad_vec) {
+void VolumeNetwork::get_fast_grads(Tensor<float> &grad_tensor) {
 	//weights come out of network ordered weights first and then by time, while they are packed reversely
 	//we have to account for that here
 	int T = input().shape.z;
 
 	for (size_t t(0); t < T; ++t) {
 		int shift(0);
-		for (CudaPtr<F> &grad : fast_grads) {
+		for (CudaPtr<F> &grad : fast_grad_ptrs) {
 			int n = grad.n / T;
 			F *src = (*grad.ptr) + t * n;
-			F *dest = grad_vec.ptr() + t * grad_vec.c + shift;
+			F *dest = grad_tensor.ptr() + t * grad_tensor.c + shift;
 
 			copy_gpu_to_gpu<>(src, dest, n);
 			shift += n;

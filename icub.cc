@@ -129,8 +129,8 @@ int main(int argc, char **argv) {
 	fastweight_net.add_tanh();
 	fastweight_net.add_conv(64, 1, 1);
 	fastweight_net.add_tanh();
-	cout << "== " << net.fast_param.n << " " << train_n << endl;
-	fastweight_net.add_conv(net.fast_param.n / train_n, 1, 1);
+	cout << "== " << net.fast_param_vec.n << " " << train_n << endl;
+	fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
 	fastweight_net.finish();
 	fastweight_net.init_uniform(.1);
 
@@ -149,7 +149,7 @@ int main(int argc, char **argv) {
 
 	Volume input(train_shape), target(train_shape);
 
-	Trainer trainer(net.param.n, .01, .00001, 40);
+	Trainer trainer(net.param_vec.n, .01, .00001, 40);
 	Trainer fast_trainer(fastweight_net.n_params, .01, .00001, 40);
 
 
@@ -178,16 +178,16 @@ int main(int argc, char **argv) {
 		Timer timer;
 		net.backward();
 		cout << "backward took:" << timer.since() << "\n\n";
-		net.grad *= train_shape.size(); //loss is counter for every pixel, normalise
 
-		trainer.update(&net.param, net.grad);
+		trainer.update(&net.param_vec, net.grad_vec);
 
 		net.get_fast_grads(fastweight_net.output_grad());
 		net.backward();
+		fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
 
 		++epoch;
 		cout << "epoch time: " << total_timer.since() << endl;
-		return 0;
+		// return 0;
 	}
 
 	cudaDeviceSynchronize();
