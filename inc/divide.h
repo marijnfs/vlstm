@@ -14,10 +14,12 @@ enum Direction {
 };
 
 __device__ __forceinline__ int get_index(int X, int Y, int Z, int C, int x, int y, int z) {
-	return z * (C * X * Y) + x * Y + y; //CWH, as cudnn
+	// return z * (C * X * Y) + x * Y + y; //CWH, as cudnn
+	return z * (C * X * Y) + y * X + x;//CHW, what what i thinking
 }
 
 __device__ __forceinline__ void copy_c(float const *in, float *out, int slicesizein, int slicesizeout, int C) {
+	// C = 1;
 	for (size_t c(0); c < C; ++c)
 		out[c * slicesizeout] = in[c * slicesizein];
 }

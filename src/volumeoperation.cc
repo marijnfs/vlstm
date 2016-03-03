@@ -155,7 +155,7 @@ void TimeOperation1::forward(int t) {
 		return;
 	in_t.data = in.x.slice(t - dt);
 	out_t.data = out.x.slice(t);
-
+	// cout << "slice shape " << in.x.slice_shape() << " " << out.x.slice_shape() << endl;
 	op.forward(in_t, out_t, beta);
 }
 

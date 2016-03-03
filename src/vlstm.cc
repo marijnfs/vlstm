@@ -102,11 +102,9 @@ void SubVolumeOperation::backward() {
 void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
 	VolumeSet &in(*volumes[ins]);
 
-	bool first(false);
-	if (!exists(outs)) {
+	if (!exists(outs))
 		add_volume(outs, output_shape(in.shape, op), reuse);
-		first = true;
-	}
+
 	VolumeSet &out(*volumes[outs]);
 
 	int dt = delay ? 1 : 0;
@@ -124,11 +122,9 @@ void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool 
 void SubVolumeOperation::add_op_rollout(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
 	VolumeSet &in(*volumes[ins]);
 
-	bool first(false);
-	if (!exists(outs)) {
+	if (!exists(outs))
 		add_volume(outs, output_shape(in.shape, op), reuse);
-		first = true;
-	}
+
 	VolumeSet &out(*volumes[outs]);
 
 	int dt = delay ? 1 : 0;
@@ -204,29 +200,6 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 
 void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	bool DELAY(true), NOW(false);
-	// add_op("x", "i", xi, NOW, reuse);
-	// add_op("h", "i", hi, DELAY, reuse);
-	// add_op("i", "fi", sig, NOW, reuse);
-
-	// add_op("x", "r", xr, NOW, reuse);
-	// add_op("h", "r", hr, DELAY, reuse);
-	// add_op("r", "fr", sig, NOW, reuse);
-
-	// add_op("x", "s", xs, NOW, reuse);
-	// add_op("h", "s", hs, DELAY, reuse);
-	// add_op("s", "fs", tan, NOW, reuse);
-
-	// add_op("fs", "fi", "c", gate, NOW, reuse);
-	// add_op("c", "fr", "c", gate, DELAY, reuse);
-	// // add_op("c", "fc", tan, reuse);
-	// add_op("c", "fc", sig, NOW, reuse);
-
-	// add_op("x", "o", xo, NOW, reuse);
-	// add_op("h", "o", ho, DELAY, reuse);
-	// //add_op("c", "o", co, reuse);
-	// add_op("o", "fo", sig, NOW, reuse);
-
-	// add_op("fc", "fo", "h", gate, NOW, reuse);
 
 	//Start
 	add_op("x", "i", xi, NOW, reuse);
@@ -244,16 +217,15 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	add_op("s", "i", "c", gate, NOW, reuse);
 	add_op("c", "r", "c", gate, DELAY, reuse);
 	add_op("c", "fc", tan, NOW, reuse);
-	//add_op("c", "fc", sig, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
 	add_op("h", "o", ho, DELAY, reuse);
-	//add_op("c", "o", co, reuse);
 	add_op("o", "o", sig, NOW, reuse, 0.0);
 
 	add_op("fc", "o", "h", gate, NOW, reuse);
 
-	 // add_op("x", "h", xo, NOW, reuse);
+	//Direct conv
+	// add_op("x", "h", xo, NOW, reuse);
 
 }
 
@@ -378,8 +350,11 @@ void LSTMShiftOperation::add_operations(VolumeSetMap *reuse) {
 }
 
 
+VLSTMOperation::VLSTMOperation() : kg(0), ko(0), c(0) { //mostly for overloading
+}
+
 //Vlstm
-VLSTMOperation::VLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm) : kg(kg_), ko(ko_), c(c_)
+VLSTMOperation::VLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm)
 {
 	// for (size_t i(0); i < 6; ++i)
 		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
@@ -393,14 +368,6 @@ VLSTMOperation::VLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSe
 	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
 	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
 
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
-
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
-
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
 
 	clear();
 	for (auto &op : operations)
@@ -426,6 +393,7 @@ void VLSTMOperation::forward(Volume &in, Volume &out) {
 	for (size_t i(0); i < operations.size(); ++i) {
 		operations[i]->clear();
 		divide(in, operations[i]->input().x, i);
+
 		operations[i]->forward();
 		combine(operations[i]->output().x, out, i);
 		// if (i == 0) {
@@ -499,29 +467,24 @@ void VLSTMOperation::update(float lr) {
 
 
 //Vlstm
-UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm) : VLSTMOperation(s, kg_, ko_, c_, vsm)
+UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm)
 {
+	kg = kg_;
+	ko = ko_;
+	c = c_;
+
 	// for (size_t i(0); i < 6; ++i)
 		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
 
-	bool rollout(true);
+	bool rollout(true);///true
 	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, rollout, &vsm));
-	//operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm)); //only forward
 
 	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm)); //both +x, for the time direction is on this axis (check divide)
+	// operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm)); //HACK
 	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm));
 
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0,  1, &vsm)); //both +y, for the time direction is on this axis (check divide)
+	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm)); //both +y, for the time direction is on this axis (check divide)
 	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm));
-
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.z, s.c, s.w, s.h}));
-
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.w, s.c, s.z, s.h}));
-
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
-	// 	volumes.push_back(new VolumeSet(VolumeShape{s.h, s.c, s.w, s.z}));
 
 	clear();
 	for (auto &op : operations)
@@ -531,10 +494,20 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 
 void UniVLSTMOperation::forward(Volume &in, Volume &out) {
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
-	for (size_t i(0); i < operations.size(); ++i) {
+	// vector<Direction> directions={XF};
+	for (size_t i(0); i < directions.size(); ++i) {
 		operations[i]->clear();
 		divide(in, operations[i]->input().x, directions[i]);
+
+		// operations[i]->input().x.draw_slice("middle.png", 0);
+		// operations[i]->input().x.draw_slice("middle2.png", 30);
+		// operations[i]->input().x.draw_slice("middle3.png", 200);
 		operations[i]->forward();
+		// operations[i]->output().x.draw_slice("middleout.png", 0);
+		// operations[i]->output().x.draw_slice("middleout2.png", 30);
+		// operations[i]->output().x.draw_slice("middleout3.png", 200);
+
+		// combine(operations[i]->output().x, out, directions[i]);
 		combine(operations[i]->output().x, out, directions[i]);
 		// if (i == 0) {
 		// 	operations[0]->volumes["c"]->x.draw_slice("c1.png", 1);
@@ -551,8 +524,9 @@ void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 	// operations[0]->clear_grad();
 	// operations[2]->clear_grad();
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
-
-	for (size_t i(0); i < operations.size(); ++i) {
+	// vector<Direction> directions={XF};
+	for (size_t i(0); i < directions.size(); ++i) {
+		cout << "back " << i << endl;
 		//forward
 		operations[i]->clear_grad();
 		operations[i]->clear();

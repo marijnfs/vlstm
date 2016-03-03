@@ -97,6 +97,7 @@ struct LSTMShiftOperation : public SubVolumeOperation {
 
 
 struct VLSTMOperation : public VolumeOperation {
+	VLSTMOperation();
 	VLSTMOperation(VolumeShape shape, int kg, int ko, int c, VolumeSetMap &vsm);
 
 	void forward(Volume &in, Volume &out);

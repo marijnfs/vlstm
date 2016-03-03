@@ -48,7 +48,7 @@ float *Volume::slice(int z) {
 }
 
 TensorShape Volume::slice_shape() {
-	return TensorShape{1, shape.c, shape.h, shape.w};
+	return TensorShape{1, shape.c, shape.w, shape.h};
 }
 
 void Volume::zero() {

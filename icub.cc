@@ -25,13 +25,19 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 	for (size_t i(0); i < sub_n; ++i) {
 		cout << i << endl;
 		Img img = db.load<Img>("img", i + start);
-		assert(img.w == input.shape.w);
-		assert(img.h == input.shape.h);
-		assert(img.c == input.shape.c);
+		assert(img.w() == input.shape.w);
+		assert(img.h() == input.shape.h);
+		assert(img.c() == input.shape.c);
 
 		Action action = db.load<Action>("action", i + start);
 		cout << "copy:" << endl;
 		cout << img.data().data() << " " << input.slice(i) << " " << img.data().size() << endl;
+		// vector<float> img_correct(img.data().size());
+		// float const *it = img.data().data();
+		// for (size_t c(0); c < img.c(); ++c)
+		// 	for (size_t y(0); y < img.h(); ++y)
+		// 		for (size_t x(0); x < img.w(); ++x, ++it)
+		// 			img_correct[c * img.w() * img.h() + x * img.h() + y] = *it;
 		cout << "input shape " << input.shape << endl;
 		if (i < n)
 			copy_to_gpu<>(img.data().data(), input.slice(i),  img.data().size());
@@ -89,19 +95,19 @@ int main(int argc, char **argv) {
 
 
 	//Marijn net
-	net.add_fc(8);
-	net.add_univlstm(7, 7, 4);
-	net.add_fc(8);
-	net.add_tanh();
+	// net.add_fc(8);
+	net.add_univlstm(7, 7, img_c);
+	// net.add_fc(8);
+	// net.add_tanh();
 
-	net.add_univlstm(7, 7, 4);
+	// net.add_univlstm(7, 7, 4);
 	//net.add_fc(32);
 	//net.add_tanh();
 	//net.add_vlstm(7, 7, 32);
 	// net.add_fc(32);
 	// net.add_tanh();
-	net.add_fc(img_c);
-	net.add_softmax();
+	// net.add_fc(img_c);
+	// net.add_softmax();
 
 	net.finish();
 	//net.init_normal(0, .1);
@@ -130,7 +136,7 @@ int main(int argc, char **argv) {
 	fastweight_net.add_conv(64, 1, 1);
 	fastweight_net.add_tanh();
 	cout << "== " << net.fast_param_vec.n << " " << train_n << endl;
-	fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
+	// fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
 	fastweight_net.finish();
 	fastweight_net.init_uniform(.1);
 
@@ -160,13 +166,15 @@ int main(int argc, char **argv) {
 		fastweight_net.forward();
 		cout << "fast forward took:" << fasttimer.since() << endl;
 
-		net.set_fast_weights(fastweight_net.output());
+		// net.set_fast_weights(fastweight_net.output());
 
 	    Timer total_timer;
 		net.input().draw_slice("slice.png",0);
 
 		Timer ftimer;
 		net.forward();
+		net.output().draw_slice("slice_out.png",0);
+
 		cout << "forward took:" << ftimer.since() << endl;
 
 		cout << net.input().shape << " " << target.shape << endl;
@@ -181,9 +189,9 @@ int main(int argc, char **argv) {
 
 		trainer.update(&net.param_vec, net.grad_vec);
 
-		net.get_fast_grads(fastweight_net.output_grad());
-		net.backward();
-		fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
+		// net.get_fast_grads(fastweight_net.output_grad());
+		// fastweight_net.backward();
+		// fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
 
 		++epoch;
 		cout << "epoch time: " << total_timer.since() << endl;
