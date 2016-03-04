@@ -142,11 +142,9 @@ void SubVolumeOperation::add_op(string ins, string in2s, string outs, Operation2
 	VolumeSet &in(*volumes[ins]);
 	VolumeSet &in2(*volumes[in2s]);
 
-	bool first(false);
-	if (!exists(outs)) {
+	if (!exists(outs))
 		add_volume(outs, output_shape(in.shape, op), reuse);
-		first = true;
-	}
+
 	VolumeSet &out(*volumes[outs]);
 
 	int dt = delay ? 1 : 0;
@@ -354,7 +352,8 @@ VLSTMOperation::VLSTMOperation() : kg(0), ko(0), c(0) { //mostly for overloading
 }
 
 //Vlstm
-VLSTMOperation::VLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm)
+VLSTMOperation::VLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm):
+kg(kg_), ko(ko_), c(c_)
 {
 	// for (size_t i(0); i < 6; ++i)
 		// operations.push_back(new LSTMOperation(*(x6.volumes[i]), *(y6.volumes[i]), kg, ko, c));
@@ -408,9 +407,6 @@ void VLSTMOperation::forward(Volume &in, Volume &out) {
 }
 
 void VLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
-	// operations[0]->clear_grad();
-	// operations[2]->clear_grad();
-
 	for (size_t i(0); i < operations.size(); ++i) {
 		//forward
 		operations[i]->clear_grad();
@@ -424,8 +420,6 @@ void VLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 		combine(operations[i]->input().diff, in.diff, i);
 		// operations[i]->scale_grad();
 	}
-	// operations[0]->scale_grad();
-	// operations[2]->scale_grad();
 }
 
 void VLSTMOperation::forward_dry_run(Volume &in, Volume &out){
@@ -491,7 +485,6 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 		op->forward_dry_run();
 }
 
-
 void UniVLSTMOperation::forward(Volume &in, Volume &out) {
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
 	// vector<Direction> directions={XF};
@@ -526,7 +519,6 @@ void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
 	// vector<Direction> directions={XF};
 	for (size_t i(0); i < directions.size(); ++i) {
-		// cout << "back " << i << endl;
 		//forward
 		operations[i]->clear_grad();
 		operations[i]->clear();
@@ -534,11 +526,9 @@ void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 		operations[i]->forward();
 
 		//backward
-		// unidivide(out.diff, operations[i]->output().diff, i);
+		divide(out.diff, operations[i]->output().diff, directions[i]);
 		operations[i]->backward();
 		combine(operations[i]->input().diff, in.diff, directions[i]);
 		// operations[i]->scale_grad();
 	}
-	// operations[0]->scale_grad();
-	// operations[2]->scale_grad();
 }

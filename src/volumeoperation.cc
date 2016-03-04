@@ -207,8 +207,8 @@ void TimeOperation1Rollout::backward(int t) {
 	in_err_t.data = in.diff.slice(t - dt);
 	out_err_t.data = out.diff.slice(t);
 
-	op.backward(in_t, out_t, out_err_t, in_err_t, beta);
-	op.backward_weights(in_t, out_err_t, 1.0);
+	op.backward_timed(in_t, out_t, out_err_t, in_err_t, t, beta);
+	op.backward_weights_timed(in_t, out_err_t, t, 1.0);
 }
 
 void TimeOperation1Rollout::forward_dry_run() {

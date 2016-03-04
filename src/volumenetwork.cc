@@ -263,12 +263,14 @@ void VolumeNetwork::get_fast_grads(Tensor<float> &grad_tensor) {
 	int shift(0);
 	for (CudaPtr<F> &grad : fast_grad_ptrs) {
 		int n = grad.n / T;
-		vector<float> bla(n);
-		copy_gpu_to_cpu<>(*grad.ptr, &bla[0], n);
-		cout << bla << endl;
+		// cout << "get grads " << grad.n << " " << T << " " << n << endl;
+		// vector<float> bla(n);
 		for (size_t t(0); t < T; ++t) {
 			F *src = (*grad.ptr) + t * n;
 			F *dest = grad_tensor.ptr() + t * grad_tensor.c + shift;
+			// cout << (fast_grad_vec.data) << " " << src << endl;
+			// copy_gpu_to_cpu<>(src, &bla[0], n);
+			// cout << bla << endl;
 			copy_gpu_to_gpu<>(src, dest, n);
 		}
 		shift += n;

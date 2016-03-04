@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 	// net.add_softmax();
 
 	net.finish();
-	//net.init_normal(0, .1);
+	// net.init_normal(0, .1);
 	net.init_uniform(.1);
 
 
@@ -175,30 +175,37 @@ int main(int argc, char **argv) {
 		cout << "fast forward took:" << fasttimer.since() << endl;
 		// cout << fastweight_net.output().to_vector() << endl;
 		// cout << fastweight_net.input().to_vector() << endl;
+
 		net.set_fast_weights(fastweight_net.output());
+		//cout << net.fast_param_vec.to_vector() << endl;
+		// cout << net.param_vec.to_vector() << endl;
 
 	    Timer total_timer;
-		net.input().draw_slice("slice.png",0);
+		net.input().draw_slice("input_last.png",	train_n-1);
 
 		Timer ftimer;
 		net.forward();
-		net.output().draw_slice("slice_out.png",0);
+		net.output().draw_slice("output_last.png",train_n-1);
+		target.draw_slice("target_last.png",train_n-1);
 
 		cout << "forward took:" << ftimer.since() << endl;
 
-		cout << net.input().shape << " " << target.shape << endl;
 		float loss = net.calculate_loss(target);
 		logger << "epoch: " << epoch << ": loss " << (loss / train_shape.size()) << "\n";
 		last_loss = loss;
-		net.save(netname);
+		//net.save(netname);
 
 		Timer timer;
+		// cout << last(net.volumes)->diff.to_vector() << endl;
 		net.backward();
 		cout << "backward took:" << timer.since() << "\n\n";
 
-		trainer.update(&net.param_vec, net.grad_vec);
+		// cout << net.fast_grad_vec.to_vector() << endl;
+		// return 0;
 		net.get_fast_grads(fastweight_net.output_grad());
 		// cout << fastweight_net.output_grad().to_vector() << endl;
+		trainer.update(&net.param_vec, net.grad_vec);
+
 		// return 0;
 		fastweight_net.backward();
 		fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
