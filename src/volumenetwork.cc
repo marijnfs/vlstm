@@ -240,37 +240,37 @@ void VolumeNetwork::describe(std::ostream &out) {
 
 void VolumeNetwork::set_fast_weights(Tensor<float> &weights) {
 	//weights come out of network ordered weights first and then by time, while they are packed reversely
-	//we have to account for that here
+	//we account for that here
 	int T = input().shape.z;
 
-	for (size_t t(0); t < T; ++t) {
-		int shift(0);
-		for (CudaPtr<F> &param : fast_param_ptrs) {
-			int n = param.n / T;
+	int shift(0);
+	for (CudaPtr<F> &param : fast_param_ptrs) {
+		int n = param.n / T;
+		for (size_t t(0); t < T; ++t) {
 			F *dest = (*param.ptr) + t * n;
 			F *src = weights.ptr() + t * weights.c + shift;
-
-			cout << dest << " " << src << " " << n << " " << weights.c << " " << weights.h << endl;
 			copy_gpu_to_gpu<>(src, dest, n);
-			shift += n;
 		}
+		shift += n;
 	}
 }
 
 void VolumeNetwork::get_fast_grads(Tensor<float> &grad_tensor) {
 	//weights come out of network ordered weights first and then by time, while they are packed reversely
-	//we have to account for that here
+	//we account for that here
 	int T = input().shape.z;
 
-	for (size_t t(0); t < T; ++t) {
-		int shift(0);
-		for (CudaPtr<F> &grad : fast_grad_ptrs) {
-			int n = grad.n / T;
+	int shift(0);
+	for (CudaPtr<F> &grad : fast_grad_ptrs) {
+		int n = grad.n / T;
+		vector<float> bla(n);
+		copy_gpu_to_cpu<>(*grad.ptr, &bla[0], n);
+		cout << bla << endl;
+		for (size_t t(0); t < T; ++t) {
 			F *src = (*grad.ptr) + t * n;
 			F *dest = grad_tensor.ptr() + t * grad_tensor.c + shift;
-
 			copy_gpu_to_gpu<>(src, dest, n);
-			shift += n;
 		}
+		shift += n;
 	}
 }

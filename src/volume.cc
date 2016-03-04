@@ -121,7 +121,7 @@ void Volume::draw_slice(string filename, int slice, float th) {
 	vector<F> data = to_vector();
 	if (th > 0.0)	thresholding(data, th);
 
-	cout << "drawing " << shape << endl;
+	cout << "drawing slice " << slice << " : " << shape << " to " << filename << endl;
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
 }
 
@@ -133,6 +133,7 @@ void Volume::draw_slice_rgb(string filename, int slice) {
 		for(int i(0); i < shape.w*shape.h; i++){
 			rgb[i*3+c] = data[slice * slice_size + c * shape.w*shape.h + i];
 		}
+	cout << "drawing slice " << slice << " : " << shape << " to " << filename << endl;
 	write_img(filename, 3, shape.w, shape.h, &rgb[0]);
 }
 

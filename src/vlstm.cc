@@ -526,7 +526,7 @@ void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
 	// vector<Direction> directions={XF};
 	for (size_t i(0); i < directions.size(); ++i) {
-		cout << "back " << i << endl;
+		// cout << "back " << i << endl;
 		//forward
 		operations[i]->clear_grad();
 		operations[i]->clear();
