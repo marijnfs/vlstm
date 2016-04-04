@@ -10,13 +10,17 @@ struct Trainer {
 	Trainer(int n_params, float start_lr, float end_lr, float half_time);
 
 	void update(CudaVec *param, CudaVec &grad);
+	float lr();
 
 	CudaVec a,b,c,d,e, rmse;
 
-	float decay;
+	float var_decay;
 	float mean_decay;
 	float eps;
 	float base_lr, end_lr, lr_decay;
+	float var_decay_bias, mean_decay_bias;
+
+	bool first;
 };
 
 #endif

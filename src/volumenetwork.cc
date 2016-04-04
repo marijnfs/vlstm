@@ -12,7 +12,11 @@ VolumeNetwork::VolumeNetwork(VolumeShape shape) : n_params(0) {
 void VolumeNetwork::forward() {
 	clear();
 	for (int i(0); i < operations.size(); i++) {
+		cout << "===" << i << endl;
+		handle_error( cudaGetLastError() );
+
 		operations[i]->forward(volumes[i]->x, volumes[i+1]->x);
+		handle_error( cudaGetLastError() );
 	}
 
 }
@@ -22,7 +26,7 @@ void VolumeNetwork::backward() {
 		operations[i]->backward(*volumes[i], *volumes[i+1]);
 		operations[i]->backward_weights(*volumes[i], *volumes[i+1]);
 	}
-	grad_vec *= output_shape().size(); //loss is counter for every pixel, normalise
+	// grad_vec *= output_shape().size(); //loss is counter for every pixel, normalise
 }
 
 void VolumeNetwork::forward_dry_run() {
@@ -153,6 +157,8 @@ Volume &VolumeNetwork::input() {
 float VolumeNetwork::calculate_loss(Volume &target) {
 	last(volumes)->diff.from_volume(target);
 	last(volumes)->diff -= last(volumes)->x;
+	// last(volumes)->diff.from_volume(last(volumes)->x);
+	// last(volumes)->diff -= target;
 
 	float norm = last(volumes)->diff.norm2() * 0.5;
 	return norm;
@@ -202,9 +208,9 @@ void VolumeNetwork::add_softmax() {
 
 void VolumeNetwork::add_tanh() {
 	cout << "adding tanh" << endl;
-	auto tan = new TanhVolumeOperation(last(shapes));
-	auto shape = tan->output_shape(last(shapes));
-	operations.push_back(tan);
+	auto tan_op = new TanhVolumeOperation(last(shapes));
+	auto shape = tan_op->output_shape(last(shapes));
+	operations.push_back(tan_op);
 	shapes.push_back(shape);
 	volumes.push_back(new VolumeSet(shape));
 }

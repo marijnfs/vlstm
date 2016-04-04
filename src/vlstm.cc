@@ -1,6 +1,7 @@
 #include "vlstm.h"
 #include "divide.h"
 #include <typeinfo>
+#include <iostream>
 
 using namespace std;
 
@@ -79,11 +80,12 @@ void SubVolumeOperation::forward_dry_run() {
 
 void SubVolumeOperation::forward() {
 //	int T(in_shape.z);
-	for (int t(0); t < T; ++t)
+	for (int t(0); t < T; ++t) {
+		// cout << "forward t:" << t << endl;
 		for (auto &op : operations) {
 			op->forward(t);
 		}
-
+	}
 }
 
 void SubVolumeOperation::backward() {
@@ -176,10 +178,10 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 //LSTM operation
 LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout, VolumeSetMap *reuse) :
 	SubVolumeOperation(in),
-	xi(in.c, c, kg, kg, in.z), hi(c, c, kg, kg, in.z), //input gate
-	xr(in.c, c, kg, kg, in.z), hr(c, c, kg, kg, in.z), //remember gate (forget gates dont make sense!)
-	xs(in.c, c, kg, kg, in.z), hs(c, c, kg, kg, in.z), //cell input
-	xo(in.c, c, ko, ko, in.z), ho(c, c, ko, ko, in.z) //co(c, c, ko, ko), //output gate
+	xi("", in.c, c, kg, kg, in.z), hi("", c, c, kg, kg, in.z), //input gate
+	xr("", in.c, c, kg, kg, in.z), hr("", c, c, kg, kg, in.z), //remember gate (forget gates dont make sense!)
+	xs("", in.c, c, kg, kg, in.z), hs("", c, c, kg, kg, in.z), //cell input
+	xo("", in.c, c, ko, ko, in.z), ho("", c, c, ko, ko, in.z) //co(c, c, ko, ko), //output gate
 {
 	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
 	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
@@ -202,25 +204,29 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	//Start
 	add_op("x", "i", xi, NOW, reuse);
 	add_op("h", "i", hi, DELAY, reuse);
-	add_op("i", "i", sig, NOW, reuse, 0.0);
+	add_op("i", "fi", sig, NOW, reuse);
+	// add_op("i", "i", sig, NOW, reuse, 0.0);
 
 	add_op("x", "r", xr, NOW, reuse);
 	add_op("h", "r", hr, DELAY, reuse);
-	add_op("r", "r", sig, NOW, reuse, 0.0);
+	add_op("r", "fr", sig, NOW, reuse);
+	// add_op("r", "r", sig, NOW, reuse, 0.0);
 
 	add_op("x", "s", xs, NOW, reuse);
 	add_op("h", "s", hs, DELAY, reuse);
-	add_op("s", "s", tan, NOW, reuse, 0.0);
+	add_op("s", "fs", tan, NOW, reuse);
+	// add_op("s", "s", tan, NOW, reuse, 0.0);
 
-	add_op("s", "i", "c", gate, NOW, reuse);
-	add_op("c", "r", "c", gate, DELAY, reuse);
+	add_op("fs", "fi", "c", gate, NOW, reuse);
+	add_op("c", "fr", "c", gate, DELAY, reuse);
 	add_op("c", "fc", tan, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
 	add_op("h", "o", ho, DELAY, reuse);
-	add_op("o", "o", sig, NOW, reuse, 0.0);
+	add_op("o", "fo", sig, NOW, reuse);
+	// add_op("o", "o", sig, NOW, reuse, 0.0);
 
-	add_op("fc", "o", "h", gate, NOW, reuse);
+	add_op("fc", "fo", "h", gate, NOW, reuse);
 
 	//Direct conv
 	// add_op("x", "h", xo, NOW, reuse);
@@ -234,27 +240,27 @@ void LSTMOperation::add_operations_rollout(VolumeSetMap *reuse) {
 	//Start
 	add_op_rollout("x", "i", xi, NOW, reuse);
 	add_op_rollout("h", "i", hi, DELAY, reuse);
-	add_op("i", "i", sig, NOW, reuse, 0.0);
+	add_op("i", "fi", sig, NOW, reuse);
 
 	add_op_rollout("x", "r", xr, NOW, reuse);
 	add_op_rollout("h", "r", hr, DELAY, reuse);
-	add_op("r", "r", sig, NOW, reuse, 0.0);
+	add_op("r", "fr", sig, NOW, reuse);
 
 	add_op_rollout("x", "s", xs, NOW, reuse);
 	add_op_rollout("h", "s", hs, DELAY, reuse);
-	add_op("s", "s", tan, NOW, reuse, 0.0);
+	add_op("s", "fs", tan, NOW, reuse);
 
-	add_op("s", "i", "c", gate, NOW, reuse);
-	add_op("c", "r", "c", gate, DELAY, reuse);
+	add_op("fs", "fi", "c", gate, NOW, reuse);
+	add_op("c", "fr", "c", gate, DELAY, reuse);
 	add_op("c", "fc", tan, NOW, reuse);
 	//add_op("c", "fc", sig, NOW, reuse);
 
 	add_op_rollout("x", "o", xo, NOW, reuse);
 	add_op_rollout("h", "o", ho, DELAY, reuse);
 	//add_op("c", "o", co, reuse);
-	add_op("o", "o", sig, NOW, reuse, 0.0);
+	add_op("o", "fo", sig, NOW, reuse);
 
-	add_op("fc", "o", "h", gate, NOW, reuse);
+	add_op("fc", "fo", "h", gate, NOW, reuse);
 
 	 // add_op("x", "h", xo, NOW, reuse);
 }
@@ -474,7 +480,6 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, rollout, &vsm));
 
 	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm)); //both +x, for the time direction is on this axis (check divide)
-	// operations.push_back(new LSTMOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, &vsm)); //HACK
 	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm));
 
 	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm)); //both +y, for the time direction is on this axis (check divide)
@@ -487,17 +492,22 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 
 void UniVLSTMOperation::forward(Volume &in, Volume &out) {
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
-	// vector<Direction> directions={XF};
+	// vector<Direction> directions={ZF};//, XF, XB};
 	for (size_t i(0); i < directions.size(); ++i) {
+
 		operations[i]->clear();
+		// cout << "forward dir:" << i << " " << directions[i] << endl;
+		// cout << in.shape << " " << operations[i]->input().x.shape << endl;
 		divide(in, operations[i]->input().x, directions[i]);
+		// in.draw_slice("middlein.png", 0);
+		// in.draw_slice("middlein2.png", 10);
 
 		// operations[i]->input().x.draw_slice("middle.png", 0);
-		// operations[i]->input().x.draw_slice("middle2.png", 30);
+		// operations[i]->input().x.draw_slice("middle2.png", 10);
 		// operations[i]->input().x.draw_slice("middle3.png", 200);
 		operations[i]->forward();
 		// operations[i]->output().x.draw_slice("middleout.png", 0);
-		// operations[i]->output().x.draw_slice("middleout2.png", 30);
+		// operations[i]->output().x.draw_slice("middleout2.png", 10);
 		// operations[i]->output().x.draw_slice("middleout3.png", 200);
 
 		// combine(operations[i]->output().x, out, directions[i]);
@@ -517,7 +527,7 @@ void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 	// operations[0]->clear_grad();
 	// operations[2]->clear_grad();
 	vector<Direction> directions={ZF, XF, XB, YF, YB};
-	// vector<Direction> directions={XF};
+	// vector<Direction> directions={ZF};//, XF, XB};
 	for (size_t i(0); i < directions.size(); ++i) {
 		//forward
 		operations[i]->clear_grad();

@@ -35,7 +35,15 @@ inline Log &operator<<(Log &out, T const &in) {
 }
 
 inline void print_last(std::vector<float> vals, int n) {
+	std::cout << "[";
 	for (size_t i(vals.size() - n); i < vals.size(); ++i)
+		std::cout << vals[i] << " ";
+	std::cout << "]" << std::endl;
+}
+
+inline void print_wide(std::vector<float> vals, int n) {
+	int step(vals.size() / n);
+	for (size_t i(0); i < vals.size(); i += step)
 		std::cout << vals[i] << " ";
 	std::cout << std::endl;
 }

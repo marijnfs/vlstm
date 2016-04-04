@@ -10,21 +10,11 @@
 #include "log.h"
 #include "divide.h"
 #include "raw.h"
+#include "trainer.h"
 
 using namespace std;
 
-void print_last(vector<float> vals, int n) {
-	for (size_t i(vals.size() - n); i < vals.size(); ++i)
-		cout << vals[i] << " ";
-	cout << endl;
-}
 
-void print_wide(vector<float> vals, int n) {
-	int step(vals.size() / n);
-	for (size_t i(0); i < vals.size(); i += step)
-		cout << vals[i] << " ";
-	cout << endl;
-}
 
 
 int main(int argc, char **argv) {
@@ -119,32 +109,33 @@ int main(int argc, char **argv) {
 
 
 	//Marijn net
-	// net.add_fc(8);
-	// net.add_vlstm(7, 7, 32);
-	// //net.add_fc(32);
-	// //net.add_tanh();
-	// net.add_vlstm(7, 7, 32);
-	// //net.add_fc(32);
-	// //net.add_tanh();
-	// //net.add_vlstm(7, 7, 32);
-	// net.add_fc(32);
-	// net.add_tanh();
-	// net.add_fc(5);
-	// net.add_softmax();
-
 	//Wonmin net
 	// net.add_fc(16);
 	net.add_vlstm(7, 7, 16);
-	net.add_fc(25);
-	net.add_tanh();
+	// net.add_fc(32);
+	// net.add_tanh();
 	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
-	net.add_tanh();
+	// net.add_fc(64);
+	// net.add_tanh();
 	net.add_vlstm(7, 7, 64);
-	// net.add_fc(128);
+	// net.add_fc(64);
 	// net.add_tanh();
 	net.add_fc(5);
 	net.add_softmax();
+
+	//Wonmin net
+	// //// net.add_fc(16);
+	// net.add_vlstm(7, 7, 16);
+	// net.add_fc(25);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(45);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 64);
+	// //// net.add_fc(128);
+	// //// net.add_tanh();
+	// net.add_fc(5);
+	// net.add_softmax();
 
 	//Wonmin net2
 	/*net.add_fc(32);
@@ -164,7 +155,8 @@ int main(int argc, char **argv) {
 
 
 	net.finish();
-	//net.init_normal(0, .1);
+	// net.init_normal(0, .1);
+	// net.init_uniform(.1);
 
 	cout << net.volumes[0]->x.shape << endl;
 	cout << inputs[0].shape << endl;
@@ -190,20 +182,18 @@ int main(int argc, char **argv) {
 	epoch = 0;
 	float last_loss = 9999999.;
 
-	//float base_lr = .1;
-	float base_lr = .001;
-	float const LR_DECAY = pow(.5, 1.0 / 100);
-
 	int n_sums(50); // marijn trick vars
 	int sum_counter(0);
 	int burnin(50);
+
+	Trainer trainer(net.param_vec.n, .01, .0000001, 200);
 
 	while (true) {
 	  Timer total_timer;
 		ostringstream ose;
 		ose << img_path << "mom_sub_in-" << epoch << ".png";
 		int brainnum = rand() % n_brains;
-		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, false, rand()%2, false); // rotate, xflip, yflip, zflip
+		copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, rand()%2, false, false); // rotate, xflip, yflip, zflip
 
 		//copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, true);
 		//
@@ -216,7 +206,12 @@ int main(int argc, char **argv) {
 		label_subset.draw_slice_rgb(osse.str(),0);
 
 		Timer ftimer;
+		cout << "------------" << endl;
+		// print_last(net.param_vec.to_vector(), 30);
+
 		net.forward();
+		// print_last(net.param_vec.to_vector(), 30);
+
 		cout << "forward took:" << ftimer.since() << endl;
 
 		ostringstream oss;
@@ -233,91 +228,33 @@ int main(int argc, char **argv) {
 		//}
 
 		Timer timer;
+		// cout << "=====" << endl;
+		// print_last(net.param_vec.to_vector(), 30);
+
 		net.backward();
+		// print_last(net.param_vec.to_vector(), 30);
+
 		cout << "backward took:" << timer.since() << "\n\n";
-		net.grad *= 1.0 / inputs[brainnum].size();
+		net.grad_vec *= 1.0 / inputs[brainnum].size();
 
-		// cout << net.grad.to_vector() << endl;
-		// net.update(.1);
-
-		//SGD
-		//net.c = net.grad;
-
-		//RMS PROP
-		float decay = epoch < 4 ? 0.5 : 0.9;
-		float mean_decay = 0.9;
-		float eps = .00001;
-		//float lr = 0.001;
-		//float lr = 0.01;
-
+		// cout << "before after" << endl;
+		// print_last(net.param_vec.to_vector(), 30);
+		trainer.update(&net.param_vec, net.grad_vec);
+		// cout << "-------" << endl;
+		// print_last(net.param_vec.to_vector(), 30);
+		// cout << "=====end" << endl;
 		// float lr = epoch < 4 ? .0001 : .001;
 
-		float lr = .0000001 + base_lr;
-		base_lr *= LR_DECAY;
-
-		net.a = net.grad;
-		net.a *= net.a;
-		net.rmse *= decay;
-		net.a *= (1.0 - decay);
-		net.rmse += net.a;
-
-		net.b = net.rmse;
-		net.b.sqrt();
-		net.b += eps;
-
-		net.c = net.grad;
-		net.c /= net.b;
-
-		//Marijn Trick
-
-		//net.d = net.c;
-		//net.d *= (1.0 - mean_decay);
-		//net.e *= mean_decay;
-		//net.e += net.d;
-
-		//net.d = net.e;
-		//net.d.abs();
-		//net.c *= net.d;
-
-		//Marijn Trick 2
-
-		// if (epoch >= burnin) {
-		//   net.d = net.param;
-		//   net.d *= (1.0 / n_sums);
-		//   net.e += net.d;
-		//   ++sum_counter;
-
-		//   if (sum_counter == n_sums) {
-		//     net.param = net.e;
-		//     net.e.zero();
-		//     net.c.zero();
-		//     sum_counter = 0;
-		//     net.save("mean.net");
-		//   }
-
-		// }
-
-		//Momentum
-
-		net.d = net.c;
-		net.d *= (1.0 - mean_decay);
-		net.e *= mean_decay;
-		net.e += net.d;
-		net.c = net.e;
-
-		//update
-		//net.c.clip(1.);
-		net.c *= lr;
-		net.param += net.c;
-
-		print_wide(net.grad.to_vector(), 20);
+		cout << "grad: ";
+		print_wide(net.grad_vec.to_vector(), 20);
 		// print_last(net.rmse.to_vector(), 10);
 		// print_last(net.e.to_vector(), 10);
-		print_wide(net.param.to_vector(), 20);
+		cout << "param: ";
+		print_wide(net.param_vec.to_vector(), 20);
 
 
 		++epoch;
-		cout << "epoch time: " << total_timer.since() <<" lr: " << lr << endl;
+		cout << "epoch time: " << total_timer.since() <<" lr: " << trainer.lr() << endl;
 		// return 0;
 	}
 

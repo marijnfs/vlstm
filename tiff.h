@@ -46,8 +46,6 @@ inline Volume open_tiff(std::string name, bool do_normalize = false, bool binary
         }
         v_data.push_back(fdata);
 
-	// if (z == 5) //hack
- //         	break;
 
     } while (TIFFReadDirectory(tif));
 

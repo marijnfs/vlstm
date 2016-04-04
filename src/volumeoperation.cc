@@ -104,6 +104,8 @@ TanhVolumeOperation::TanhVolumeOperation(VolumeShape shape) :
 void TanhVolumeOperation::forward(Volume &in, Volume &out){
 	tin.data = in.data();
 	tout.data = out.data();
+	cout << in.data() << " " << out.data() << endl;
+	cout << tin.shape() << " " << tout.shape() << endl;
 	op.forward(tin, tout);
 }
 
@@ -151,7 +153,7 @@ TimeOperation1::TimeOperation1(Operation<F> &op_, VolumeSet &in_, VolumeSet &out
 {}
 
 void TimeOperation1::forward(int t) {
-	if (dt > t)
+	if (t < dt)
 		return;
 	in_t.data = in.x.slice(t - dt);
 	out_t.data = out.x.slice(t);
@@ -160,7 +162,7 @@ void TimeOperation1::forward(int t) {
 }
 
 void TimeOperation1::backward(int t) {
-	if (dt > t)
+	if (t < dt)
 		return;
 	in_t.data = in.x.slice(t - dt);
 	out_t.data = out.x.slice(t);
@@ -190,16 +192,17 @@ TimeOperation1Rollout::TimeOperation1Rollout(Operation<F> &op_, VolumeSet &in_, 
 {}
 
 void TimeOperation1Rollout::forward(int t) {
-	if (dt > t)
+	if (t < dt)
 		return;
 	in_t.data = in.x.slice(t - dt);
 	out_t.data = out.x.slice(t);
 
+	// cout << "forward times " << t << endl;
 	op.forward_timed(in_t, out_t, t, beta); //for fastweight purposes
 }
 
 void TimeOperation1Rollout::backward(int t) {
-	if (dt > t)
+	if (t < dt)
 		return;
 	in_t.data = in.x.slice(t - dt);
 	out_t.data = out.x.slice(t);
@@ -230,7 +233,7 @@ TimeOperation2::TimeOperation2(Operation2<F> &op_, VolumeSet &in_, VolumeSet &in
 {}
 
 void TimeOperation2::forward(int t) {
-	if (dt > t)
+	if (t < dt)
 		return;
 	//we only delay the first input
 	in_t.data = in.x.slice(t - dt);
@@ -241,7 +244,7 @@ void TimeOperation2::forward(int t) {
 }
 
 void TimeOperation2::backward(int t) {
-	if (dt > t)
+	if (t < dt)
 		return;
 	in_t.data = in.x.slice(t - dt);
 	in2_t.data = in2.x.slice(t);
