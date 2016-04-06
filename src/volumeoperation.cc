@@ -19,7 +19,7 @@ void FCVolumeOperation::forward(Volume &in, Volume &out)  {
 	tin.data = in.data();
 	tout.data = out.data();
 	op.forward(tin, tout);
-	if(dropout>0.0) {
+	if(dropout > 0.0) {
 	  if (Global::validation())
 	    (*out.buf) *= 1.0 - dropout;
 	  else

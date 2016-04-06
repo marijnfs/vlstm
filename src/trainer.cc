@@ -50,7 +50,7 @@ void Trainer::update(CudaVec *param, CudaVec &grad) {
 	b += eps;
 
 	d = e;
-	d *= 1.0 / (1.0 - mean_decay_bias);
+	// d *= 1.0 / (1.0 - mean_decay_bias);
 	d /= b;
 
 	//update

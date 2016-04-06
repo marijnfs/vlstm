@@ -43,9 +43,9 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 		//one channel only, scale down by half
 		for (size_t y(0); y < input.shape.h; ++y)
 			for (size_t x(0); x < input.shape.w; ++x)
-				for (size_t dx(0); dx < 2; ++dx)
-					for (size_t dy(0); dy < 2; ++dy)
-			 			img_correct[y * input.shape.w + x] = img.data((y * 2 + dy) * img.w() + x * 2 + dx) / 4.;
+				for (size_t dx(0); dx < 4; ++dx)
+					for (size_t dy(0); dy < 4; ++dy)
+			 			img_correct[y * input.shape.w + x] = img.data((y * 4 + dy) * img.w() + x * 4 + dx) / (4. * 4.);
 		// cout << "input shape " << input.shape << endl;
 		if (i < n)
 			copy_cpu_to_gpu<>(&img_correct[0], input.slice(i),  img_correct.size());
@@ -92,8 +92,8 @@ int main(int argc, char **argv) {
 	// int img_h = img.h();
 	// int img_c = img.c();
 
-	int img_w = img.w()/2;
-	int img_h = img.h()/2;
+	int img_w = img.w()/4;
+	int img_h = img.h()/4;
 	int img_c = 1;
 	int train_n = 20;
 
@@ -138,13 +138,18 @@ int main(int argc, char **argv) {
 	// net.add_univlstm(9, 9, 16);
 	// net.add_univlstm(7, 7, img_c);
 	// net.add_univlstm(7, 7, 32);
-	net.add_univlstm(7, 7, 16);
-	net.add_univlstm(7, 7, img_c);
+	// net.add_univlstm(7, 7, 16);
+	// net.add_univlstm(7, 7, img_c);
 	// net.add_univlstm(7, 7, 64);
 	// net.add_fc(8);
 	// net.add_tanh();
-	// net.add_vlstm(7, 7, 8);
-	// net.add_fc(8);
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(16);
+	// net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+
+
+	net.add_fc(img_c);
 	// net.add_tanh();
 	// net.add_fc(img_c);
 	// net.add_tanh();
@@ -152,7 +157,7 @@ int main(int argc, char **argv) {
 
 	net.finish();
 	// net.init_normal(0, .1);
-	net.init_uniform(.01);
+	net.init_uniform(.005);
 
 
 	if (argc > 1) {
@@ -174,16 +179,16 @@ int main(int argc, char **argv) {
 	// fastweight_net.add_conv(32, 1, 1);
 	// fastweight_net.add_tanh();
 	fastweight_net.add_conv(16, 1, 1);
-	// fastweight_net.add_tanh();
+	fastweight_net.add_tanh();
 	fastweight_net.add_conv(16, 1, 1);
 	fastweight_net.add_tanh();
 
 	// fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
 
-	// fastweight_net.add_tanh();
+	fastweight_net.add_tanh();
 	fastweight_net.finish();
 
-	fastweight_net.init_uniform(.03);
+	fastweight_net.init_uniform(.04);
 
 	logger << "begin fastweight description\n";
 	logger << "input volume shape " << train_shape << "\n";
@@ -200,13 +205,13 @@ int main(int argc, char **argv) {
 
 	Volume input(train_shape), target(train_shape);
 
-	Trainer trainer(net.param_vec.n, .01, .0000001, 100);
+	Trainer trainer(net.param_vec.n, .005, .0000001, 100);
 	// Trainer fast_trainer(fastweight_net.n_params, .00001, .0000001, 100);
-	Trainer fast_trainer(fastweight_net.n_params, .01, .0000001, 100);
+	Trainer fast_trainer(fastweight_net.n_params, .001, .0000001, 100);
 
 
-	while (true) {
 		random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
+	while (true) {
 		cout << "fastweight input: " << fastweight_net.input().shape() << " " << fastweight_net.input().to_vector() << endl;
 		Timer fasttimer;
 
@@ -224,10 +229,13 @@ int main(int argc, char **argv) {
 		// cout << net.param_vec.to_vector() << endl;
 
 	    Timer total_timer;
-		net.input().draw_slice("input_last.png",	train_n-1);
 
 		Timer ftimer;
 		net.forward();
+		cout << "forward took:" << ftimer.since() << endl;
+
+		net.input().draw_slice("input_last.png",	train_n-1);
+		net.input().draw_slice("input_middle.png",	train_n / 2);
 		net.output().draw_slice("output_middle.png",train_n / 2);
 		net.output().draw_slice("output_last.png",train_n - 1);
 		cout << "output/target:" << endl;
@@ -235,7 +243,6 @@ int main(int argc, char **argv) {
 		print_wide(target.to_vector(), 30);
 		target.draw_slice("target_last.png",train_n-1);
 
-		cout << "forward took:" << ftimer.since() << endl;
 
 		float loss = net.calculate_loss(target);
 		logger << "epoch: " << epoch << ": loss " << (loss / train_shape.size()) << "\n";
@@ -257,9 +264,8 @@ int main(int argc, char **argv) {
 
 		net.save("volnet.net");
 		// fastweight_net.save("fastnet.net");
-
-		((LSTMOperation*)((UniVLSTMOperation*)net.operations[0])->operations[0])->xi.filter_bank.draw_filterbank("filters.png");
-		((LSTMShiftOperation*)((UniVLSTMOperation*)net.operations[0])->operations[1])->xi.filter_bank.draw_filterbank("filters2.png");
+		// ((LSTMOperation*)((UniVLSTMOperation*)net.operations[0])->operations[0])->xi.filter_bank.draw_filterbank("filters.png");
+		// ((LSTMShiftOperation*)((UniVLSTMOperation*)net.operations[0])->operations[1])->xi.filter_bank.draw_filterbank("filters2.png");
 		// ((LSTMOperation*)((VLSTMOperation*)net.operations[0])->operations[0])->xi.filter_bank.draw_filterbank("filters.png");
 		// ((LSTMOperation*)((VLSTMOperation*)net.operations[0])->operations[1])->xi.filter_bank.draw_filterbank("filters2.png");
 

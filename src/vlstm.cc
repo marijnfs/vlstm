@@ -194,26 +194,28 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 	vin = volumes["x"];
 	vout = volumes["h"];
 
-	xr.bias.init_normal(1., 0.0);
-	xi.bias.init_normal(1., 0.0);
+	// xr.bias.init_normal(1., 0.0);
+	// xi.bias.init_normal(1., 0.0);
+	// xo.bias.init_normal(1., 0.0);
 }
 
 void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	bool DELAY(true), NOW(false);
 
 	//Start
-	add_op("x", "i", xi, NOW, reuse);
+
 	add_op("h", "i", hi, DELAY, reuse);
+	add_op("x", "i", xi, NOW, reuse);
 	add_op("i", "fi", sig, NOW, reuse);
 	// add_op("i", "i", sig, NOW, reuse, 0.0);
 
-	add_op("x", "r", xr, NOW, reuse);
 	add_op("h", "r", hr, DELAY, reuse);
+	add_op("x", "r", xr, NOW, reuse);
 	add_op("r", "fr", sig, NOW, reuse);
 	// add_op("r", "r", sig, NOW, reuse, 0.0);
 
-	add_op("x", "s", xs, NOW, reuse);
 	add_op("h", "s", hs, DELAY, reuse);
+	add_op("x", "s", xs, NOW, reuse);
 	add_op("s", "fs", tan, NOW, reuse);
 	// add_op("s", "s", tan, NOW, reuse, 0.0);
 
@@ -294,8 +296,8 @@ LSTMShiftOperation::LSTMShiftOperation(VolumeShape in, int kg, int ko, int c, in
 	vin = volumes["x"];
 	vout = volumes["h"];
 
-	xr.bias.init_normal(1., 0.0);
-	xi.bias.init_normal(1., 0.0);
+	// xr.bias.init_normal(1., 0.0);
+	// xi.bias.init_normal(1., 0.0);
 }
 
 
@@ -419,6 +421,19 @@ void VLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 		operations[i]->clear();
 		divide(in.x, operations[i]->input().x, i);
 		operations[i]->forward();
+		// if (i == 2) {
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[0])->in.x.draw_slice("inx0.png",0);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[0])->out.x.draw_slice("outi0.png",0);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[12])->out.x.draw_slice("outcf0.png",0);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[0])->in.x.draw_slice("inx5.png",5);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[0])->out.x.draw_slice("outi5.png",5);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[12])->out.x.draw_slice("outcf5.png",5);
+
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[0])->in.x.draw_slice("inx10.png",10);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[0])->out.x.draw_slice("outi10.png",10);
+		// 	dynamic_cast<TimeOperation1*>(operations[i]->operations[12])->out.x.draw_slice("outcf10.png",10);
+		// }
+
 
 		//backward
 		divide(out.diff, operations[i]->output().diff, i);
