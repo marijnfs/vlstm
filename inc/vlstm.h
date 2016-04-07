@@ -68,6 +68,7 @@ struct LSTMOperation : public SubVolumeOperation {
 	ConvolutionOperation<F> xr, hr; //remember gate (forget gates dont make sense!)
 	ConvolutionOperation<F> xs, hs; //cell input
 	ConvolutionOperation<F> xo, ho;//, co; //output gate
+	ConvolutionOperation<F> cc;
 
 	GateOperation<F>    gate;   //for gating
 	SigmoidOperation<F> sig;

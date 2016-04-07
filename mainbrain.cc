@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 	  net.load(argv[1]);
 	}
 	else{
-		net.init_uniform(.1);
+		net.init_uniform(.05);
 	}
 
 	logger << "begin description\n";

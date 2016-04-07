@@ -161,7 +161,8 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 	xi(in.c, c, kg, kg), hi(c, c, kg, kg), //input gate
 	xr(in.c, c, kg, kg), hr(c, c, kg, kg), //remember gate (forget gates dont make sense!)
 	xs(in.c, c, kg, kg), hs(c, c, kg, kg), //cell input
-	xo(in.c, c, ko, ko), ho(c, c, ko, ko) //co(c, c, ko, ko), //output gate
+	xo(in.c, c, ko, ko), ho(c, c, ko, ko), //co(c, c, ko, ko), //output gate
+	cc(c, c, 3, 3)
 {
 	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
 	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
@@ -181,7 +182,8 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 	xi("", in.c, c, kg, kg, in.z), hi("", c, c, kg, kg, in.z), //input gate
 	xr("", in.c, c, kg, kg, in.z), hr("", c, c, kg, kg, in.z), //remember gate (forget gates dont make sense!)
 	xs("", in.c, c, kg, kg, in.z), hs("", c, c, kg, kg, in.z), //cell input
-	xo("", in.c, c, ko, ko, in.z), ho("", c, c, ko, ko, in.z) //co(c, c, ko, ko), //output gate
+	xo("", in.c, c, ko, ko, in.z), ho("", c, c, ko, ko, in.z), //co(c, c, ko, ko), //output gate
+	cc("", c, c, 3, 3, in.z)
 {
 	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
 	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
@@ -194,7 +196,7 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 	vin = volumes["x"];
 	vout = volumes["h"];
 
-	// xr.bias.init_normal(1., 0.0);
+	xr.bias.init_normal(1., 0.0);
 	// xi.bias.init_normal(1., 0.0);
 	// xo.bias.init_normal(1., 0.0);
 }
@@ -220,7 +222,10 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	// add_op("s", "s", tan, NOW, reuse, 0.0);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "fr", "c", gate, DELAY, reuse);
+	add_op("c", "ct", cc, DELAY, reuse); //hack
+	add_op("ct", "fr", "c", gate, NOW, reuse); //hack
+	// add_op("c", "fr", "c", gate, DELAY, reuse); //
+
 	add_op("c", "fc", tan, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
@@ -330,27 +335,26 @@ void LSTMShiftOperation::add_operations(VolumeSetMap *reuse) {
 	//Start
 	add_op("x", "i", xi, NOW, reuse);
 	add_op("h", "i", hi, DELAY, reuse);
-	add_op("i", "i", sig, NOW, reuse, 0.0);
+	add_op("i", "fi", sig, NOW, reuse, 0.0);
 
 	add_op("x", "r", xr, NOW, reuse);
 	add_op("h", "r", hr, DELAY, reuse);
-	add_op("r", "r", sig, NOW, reuse, 0.0);
+	add_op("r", "fr", sig, NOW, reuse, 0.0);
 
 	add_op("x", "s", xs, NOW, reuse);
 	add_op("h", "s", hs, DELAY, reuse);
-	add_op("s", "s", tan, NOW, reuse, 0.0);
+	add_op("s", "fs", tan, NOW, reuse, 0.0);
 
-	add_op("s", "i", "c", gate, NOW, reuse);
-	add_op("c", "r", "c", gate, DELAY, reuse);
+	add_op("fs", "fi", "c", gate, NOW, reuse);
+	add_op("c", "fr", "c", gate, DELAY, reuse);
 	add_op("c", "fc", tan, NOW, reuse);
-	//add_op("c", "fc", sig, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
 	add_op("h", "o", ho, DELAY, reuse);
 	//add_op("c", "o", co, reuse);
-	add_op("o", "o", sig, NOW, reuse, 0.0);
+	add_op("o", "fo", sig, NOW, reuse, 0.0);
 
-	add_op("fc", "o", "h", gate, NOW, reuse);
+	add_op("fc", "fo", "h", gate, NOW, reuse);
 
 	 // add_op("x", "h", xo, NOW, reuse);
 }
