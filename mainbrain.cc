@@ -49,11 +49,11 @@ int main(int argc, char **argv) {
 
 	for (size_t n(0); n < n_brains; ++n) {
 		ostringstream oss1, oss2, oss3, oss4, oss5,oss_label;
-		oss1 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1.raw";
-		oss2 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_IR_PP.raw";
-		oss3 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR.raw";
-		oss4 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_PP.raw";
-		oss5 << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR_PP.raw";
+		oss1 << "../mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1.raw";
+		oss2 << "../mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_IR_PP.raw";
+		oss3 << "../mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR.raw";
+		oss4 << "../mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T1_PP.raw";
+		oss5 << "../mrbrain-raw/TrainingData/" << n+1 <<"/"<< "T2_FLAIR_PP.raw";
 		inputs[n] = open_raw5(oss1.str(), oss2.str(), oss3.str(), oss4.str(), oss5.str(), width, height, depth);
 		cout << inputs[n].shape << " " << inputs[n].buf->n << endl;
 
@@ -61,9 +61,9 @@ int main(int argc, char **argv) {
 
 		//inputs[n].draw_slice_rgb("temp.bmp",0);
 
-		oss_label << "mrbrain-raw/TrainingData/" << n+1 <<"/"<< "LabelsForTraining.raw";
+		oss_label << "../mrbrain-raw/TrainingData/" << n+1 <<"/"<< "LabelsForTraining.raw";
 		outputs[n] = open_raw(oss_label.str(), width, height, depth);
-		outputs[n].draw_slice_rgb("label.bmp",10);
+		// outputs[n].draw_slice_rgb("label.bmp",10);
 
 	}
 
@@ -111,31 +111,31 @@ int main(int argc, char **argv) {
 	//Marijn net
 	//Wonmin net
 	// net.add_fc(16);
-	net.add_vlstm(7, 7, 16);
+	// net.add_vlstm(7, 7, 16);
 	// net.add_fc(32);
 	// net.add_tanh();
-	net.add_vlstm(7, 7, 32);
-	// net.add_fc(64);
-	// net.add_tanh();
-	net.add_vlstm(7, 7, 64);
-	// net.add_fc(64);
-	// net.add_tanh();
-	net.add_fc(5);
-	net.add_softmax();
-
-	//Wonmin net
-	// //// net.add_fc(16);
-	// net.add_vlstm(7, 7, 16);
-	// net.add_fc(25);
-	// net.add_tanh();
 	// net.add_vlstm(7, 7, 32);
-	// net.add_fc(45);
+	// net.add_fc(64);
 	// net.add_tanh();
 	// net.add_vlstm(7, 7, 64);
-	// //// net.add_fc(128);
-	// //// net.add_tanh();
+	// net.add_fc(64);
+	// net.add_tanh();
 	// net.add_fc(5);
 	// net.add_softmax();
+
+	//Wonmin net
+	//// net.add_fc(16);
+	net.add_vlstm(7, 7, 16);
+	net.add_fc(25);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(45);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(128);
+	net.add_tanh();
+	net.add_fc(5);
+	net.add_softmax();
 
 	//Wonmin net2
 	/*net.add_fc(32);
@@ -168,7 +168,7 @@ int main(int argc, char **argv) {
 	  net.load(argv[1]);
 	}
 	else{
-		net.init_uniform(.05);
+		net.init_uniform(.1);
 	}
 
 	logger << "begin description\n";
@@ -186,7 +186,8 @@ int main(int argc, char **argv) {
 	int sum_counter(0);
 	int burnin(50);
 
-	Trainer trainer(net.param_vec.n, .01, .0000001, 200);
+	// Trainer trainer(net.param_vec.n, .01, .0000001, 200);
+	Trainer trainer(net.param_vec.n, .001, .0000001, 200);
 
 	while (true) {
 	  Timer total_timer;

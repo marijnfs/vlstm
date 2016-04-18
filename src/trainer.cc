@@ -34,8 +34,8 @@ void Trainer::update(CudaVec *param, CudaVec &grad) {
 	//variance
 	a = grad;
 	a *= a;
-	rmse *= var_decay;
 	a *= (1.0 - var_decay);
+	rmse *= var_decay;
 	rmse += a;
 
 	//momentum (snd moment)
@@ -52,7 +52,7 @@ void Trainer::update(CudaVec *param, CudaVec &grad) {
 	d = e;
 	// d *= 1.0 / (1.0 - mean_decay_bias);
 	d /= b;
-
+	d.clip(1.0 / (1.0 - mean_decay));
 	//update
 	//c.clip(1.);
 	d *= lr_;

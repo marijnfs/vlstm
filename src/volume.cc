@@ -51,8 +51,8 @@ TensorShape Volume::slice_shape() {
 	return TensorShape{1, shape.c, shape.w, shape.h};
 }
 
-void Volume::zero() {
-	buf->zero();
+void Volume::zero(int offset) {
+	buf->zero(offset * slice_size);
 }
 
 void Volume::rand_zero(float p) {
@@ -172,6 +172,7 @@ void VolumeSet::zero() {
 	x.zero();
 	diff.zero();
 }
+
 
 // Volume6DSet::Volume6DSet(VolumeShape shape_) : shape(shape_) {
 // 	VolumeShape &s(shape);

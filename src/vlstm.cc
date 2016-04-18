@@ -101,7 +101,7 @@ void SubVolumeOperation::backward() {
 	// cout << "done" << endl;
 }
 
-void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta) {
+void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool delay, VolumeSetMap *reuse, float beta, bool param) {
 	VolumeSet &in(*volumes[ins]);
 
 	if (!exists(outs))
@@ -112,11 +112,13 @@ void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool 
 	int dt = delay ? 1 : 0;
 
 	operations.push_back(new TimeOperation1(op, in, out, dt, beta));
-	try {
-		parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
-		// cout << "a parameter" << endl;
-	} catch (const std::bad_cast& e) {
-		// cout << "not a parameter" << endl;
+	if (param) {
+		try {
+			parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
+			// cout << "a parameter" << endl;
+		} catch (const std::bad_cast& e) {
+			// cout << "not a parameter" << endl;
+		}
 	}
 }
 
@@ -174,6 +176,7 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 
 	xr.bias.init_normal(1., 0.0);
 	xi.bias.init_normal(1., 0.0);
+	cc.filter_bank.init_normal(1.0 / 9.0, 0.);
 }
 
 //LSTM operation
@@ -183,7 +186,7 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 	xr("", in.c, c, kg, kg, in.z), hr("", c, c, kg, kg, in.z), //remember gate (forget gates dont make sense!)
 	xs("", in.c, c, kg, kg, in.z), hs("", c, c, kg, kg, in.z), //cell input
 	xo("", in.c, c, ko, ko, in.z), ho("", c, c, ko, ko, in.z), //co(c, c, ko, ko), //output gate
-	cc("", c, c, 3, 3, in.z)
+	cc(c, c, 3, 3)
 {
 	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
 	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
@@ -197,7 +200,8 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 	vout = volumes["h"];
 
 	xr.bias.init_normal(1., 0.0);
-	// xi.bias.init_normal(1., 0.0);
+	xi.bias.init_normal(1., 0.0);
+	cc.filter_bank.init_normal(1.0 / 9.0, 0.);
 	// xo.bias.init_normal(1., 0.0);
 }
 
@@ -222,9 +226,9 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	// add_op("s", "s", tan, NOW, reuse, 0.0);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "ct", cc, DELAY, reuse); //hack
-	add_op("ct", "fr", "c", gate, NOW, reuse); //hack
-	// add_op("c", "fr", "c", gate, DELAY, reuse); //
+	// add_op("c", "ct", cc, DELAY, reuse, 0.0, false); //hack
+	// add_op("ct", "fr", "c", gate, NOW, reuse); //hack
+	add_op("c", "fr", "c", gate, DELAY, reuse); //
 
 	add_op("c", "fc", tan, NOW, reuse);
 
@@ -258,9 +262,11 @@ void LSTMOperation::add_operations_rollout(VolumeSetMap *reuse) {
 	add_op("s", "fs", tan, NOW, reuse);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "fr", "c", gate, DELAY, reuse);
+	add_op("c", "ct", cc, DELAY, reuse); //hack
+	add_op("ct", "fr", "c", gate, NOW, reuse); //hack
+	// add_op("c", "fr", "c", gate, DELAY, reuse); //
+
 	add_op("c", "fc", tan, NOW, reuse);
-	//add_op("c", "fc", sig, NOW, reuse);
 
 	add_op_rollout("x", "o", xo, NOW, reuse);
 	add_op_rollout("h", "o", ho, DELAY, reuse);
@@ -291,7 +297,8 @@ LSTMShiftOperation::LSTMShiftOperation(VolumeShape in, int kg, int ko, int c, in
 	xi(in.c, c, kg, kg, dx, dy), hi(c, c, kg, kg, dx, dy), //input gate
 	xr(in.c, c, kg, kg, dx, dy), hr(c, c, kg, kg, dx, dy), //remember gate (forget gates dont make sense!)
 	xs(in.c, c, kg, kg, dx, dy), hs(c, c, kg, kg, dx, dy), //cell input
-	xo(in.c, c, ko, ko, dx, dy), ho(c, c, ko, ko, dx, dy) //co(c, c, ko, ko), //output gate
+	xo(in.c, c, ko, ko, dx, dy), ho(c, c, ko, ko, dx, dy), //co(c, c, ko, ko), //output gate
+	cc(c, c, 3, 3)
 {
 	add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
 	add_volume("h", VolumeShape{in.z, c, in.w, in.h}, reuse);
@@ -346,7 +353,10 @@ void LSTMShiftOperation::add_operations(VolumeSetMap *reuse) {
 	add_op("s", "fs", tan, NOW, reuse, 0.0);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "fr", "c", gate, DELAY, reuse);
+	add_op("c", "ct", cc, DELAY, reuse); //hack
+	add_op("ct", "fr", "c", gate, NOW, reuse); //hack
+	// add_op("c", "fr", "c", gate, DELAY, reuse); //
+
 	add_op("c", "fc", tan, NOW, reuse);
 
 	add_op("x", "o", xo, NOW, reuse);
@@ -510,7 +520,7 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 }
 
 void UniVLSTMOperation::forward(Volume &in, Volume &out) {
-	vector<Direction> directions={ZF, XF, XB, YF, YB};
+	vector<Direction> directions={ZF};//, XF, XB, YF, YB};
 	// vector<Direction> directions={ZF};//, XF, XB};
 	for (size_t i(0); i < directions.size(); ++i) {
 
@@ -545,7 +555,7 @@ void UniVLSTMOperation::forward(Volume &in, Volume &out) {
 void UniVLSTMOperation::backward(VolumeSet &in, VolumeSet &out) {
 	// operations[0]->clear_grad();
 	// operations[2]->clear_grad();
-	vector<Direction> directions={ZF, XF, XB, YF, YB};
+	vector<Direction> directions={ZF};//, XF, XB, YF, YB};
 	// vector<Direction> directions={ZF};//, XF, XB};
 	for (size_t i(0); i < directions.size(); ++i) {
 		//forward

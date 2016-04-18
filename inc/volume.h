@@ -32,7 +32,7 @@ struct Volume {
 
 	float *slice(int z);
 	TensorShape slice_shape();
-	void zero();
+	void zero(int offset = 0);
 	void rand_zero(float p);
 	void init_normal(F mean, F std);
 	void fill(F val);

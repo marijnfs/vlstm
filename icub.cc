@@ -36,6 +36,7 @@ inline void normalise(vector<float> *values_p) {
 
 inline void random_next_step_subvolume(Database &db, Volume &input, Volume &target, Tensor<float> &actions) {
 	int N = db.count("img");
+	N = N * 9 / 10;//Training set
 	int diff = 1;
 	int n = input.shape.z;
 	int sub_n = n + diff; //1step prediction
@@ -61,19 +62,19 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 		//one channel only, scale down by half
 		for (size_t y(0); y < input.shape.h; ++y)
 			for (size_t x(0); x < input.shape.w; ++x)
-				for (size_t dx(0); dx < 4; ++dx)
-					for (size_t dy(0); dy < 4; ++dy)
-			 			img_correct[y * input.shape.w + x] = img.data((y * 4 + dy) * img.w() + x * 4 + dx) / (4. * 4.);
+				for (size_t dx(0); dx < 8; ++dx)
+					for (size_t dy(0); dy < 8; ++dy)
+			 			img_correct[y * input.shape.w + x] = img.data((y * 8 + dy) * img.w() + x * 8 + dx) / (8. * 8.);
 
 		normalise(&img_correct);
 		// cout << "input shape " << input.shape << endl;
 		if (i < n)
 			copy_cpu_to_gpu<>(&img_correct[0], input.slice(i),  img_correct.size());
 
-		if (i < n)
-			copy_cpu_to_gpu<>(&img_correct[0], target.slice(i), img_correct.size());
-		// if (i >= diff)
-		// 	copy_cpu_to_gpu<>(&img_correct[0], target.slice(i-diff), img_correct.size());
+		// if (i < n)
+			// copy_cpu_to_gpu<>(&img_correct[0], target.slice(i), img_correct.size());
+		if (i >= diff)
+			copy_cpu_to_gpu<>(&img_correct[0], target.slice(i-diff), img_correct.size());
 
 		if (i >= diff) {
 			vector<float> a(x);
@@ -95,8 +96,10 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 
 int main(int argc, char **argv) {
 	srand(time(0));
-	Log logger("log.txt");
 	Handler::set_device(0);
+
+	string exp_dir("exp-uni/");
+	Log logger(exp_dir + "log.txt");
 
 	Database db("/home/cvlstm/data/exp-march7-30min.db");
 	cout << db.count("exp") << endl;
@@ -112,8 +115,8 @@ int main(int argc, char **argv) {
 	// int img_h = img.h();
 	// int img_c = img.c();
 
-	int img_w = img.w()/4;
-	int img_h = img.h()/4;
+	int img_w = img.w()/8;
+	int img_h = img.h()/8;
 	int img_c = 1;
 	int train_n = 20;
 
@@ -181,11 +184,15 @@ int main(int argc, char **argv) {
 	// net.add_tanh();
 	// net.add_fc(32);
 	// net.add_tanh();
-	// net.add_fc(32);
-	// net.add_tanh();
-	// net.add_fc(img_c);
-	net.add_vlstm(7, 7, 16);
-	net.add_vlstm(7, 7, img_c);
+	net.add_fc(32);
+	net.add_tanh();
+	net.add_univlstm(7, 7, 16);
+	net.add_univlstm(7, 7, 32);
+	// net.add_univlstm(7, 7, 32);
+	net.add_fc(64);
+	net.add_tanh();
+	// net.add_vlstm(7, 7, 16);
+	// net.add_vlstm(7, 7, img_c);
 	net.add_fc(img_c);
 
 	// net.add_tanh();
@@ -217,17 +224,20 @@ int main(int argc, char **argv) {
 	// fastweight_net.add_tanh();
 	// fastweight_net.add_conv(32, 1, 1);
 	// fastweight_net.add_tanh();
-	fastweight_net.add_conv(16, 1, 1);
+	fastweight_net.add_conv(64, 1, 1);
+	fastweight_net.add_tanh();
+	fastweight_net.add_conv(32, 1, 1);
 	fastweight_net.add_tanh();
 	fastweight_net.add_conv(16, 1, 1);
 	fastweight_net.add_tanh();
 
-	// fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
+	fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
 
 	fastweight_net.add_tanh();
 	fastweight_net.finish();
 
-	fastweight_net.init_uniform(.04);
+	// fastweight_net.init_uniform(.1);
+	fastweight_net.init_normal(.0, .1);
 
 	logger << "begin fastweight description\n";
 	logger << "input volume shape " << train_shape << "\n";
@@ -244,13 +254,16 @@ int main(int argc, char **argv) {
 
 	Volume input(train_shape), target(train_shape);
 
-	Trainer trainer(net.param_vec.n, .01, .0000001, 100);
+	Trainer trainer(net.param_vec.n, .01, .0000001, 400);
 	// Trainer fast_trainer(fastweight_net.n_params, .00001, .0000001, 100);
-	Trainer fast_trainer(fastweight_net.n_params, .001, .0000001, 100);
+	Trainer fast_trainer(fastweight_net.n_params, .01, .0000001, 400);
 
 
-	random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
 	while (true) {
+		ostringstream epoch_path;
+		epoch_path << exp_dir << epoch << "-";
+		random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
+		// if (epoch % 100 == 0)
 		// cout << "fastweight input: " << fastweight_net.input().shape() << " " << fastweight_net.input().to_vector() << endl;
 		Timer fasttimer;
 
@@ -262,7 +275,7 @@ int main(int argc, char **argv) {
 		// cout << fastweight_net.output().to_vector() << endl;
 		// cout << fastweight_net.input().to_vector() << endl;
 
-		// net.set_fast_weights(fastweight_net.output());
+		net.set_fast_weights(fastweight_net.output());
 
 		//cout << net.fast_param_vec.to_vector() << endl;
 		// cout << net.param_vec.to_vector() << endl;
@@ -273,15 +286,15 @@ int main(int argc, char **argv) {
 		net.forward();
 		cout << "forward took:" << ftimer.since() << endl;
 
-		net.input().draw_slice("input_last.png",	train_n-1);
-		net.input().draw_slice("input_middle.png",	train_n / 2);
-		net.output().draw_slice("output_middle.png",train_n / 2);
-		net.output().draw_slice("output_last.png",train_n - 1);
+		net.input().draw_slice(epoch_path.str() + "input_last.png",	train_n-1);
+		net.input().draw_slice(epoch_path.str() + "input_middle.png",	train_n / 2);
+		net.output().draw_slice(epoch_path.str() + "output_middle.png",train_n / 2);
+		net.output().draw_slice(epoch_path.str() + "output_last.png",train_n - 1);
 		cout << "output/target:" << endl;
 		print_wide(net.output().to_vector(), 30);
 		print_wide(target.to_vector(), 30);
-		target.draw_slice("target_middle.png",train_n/2);
-		target.draw_slice("target_last.png",train_n-1);
+		target.draw_slice(epoch_path.str() + "target_middle.png",train_n/2);
+		target.draw_slice(epoch_path.str() + "target_last.png",train_n-1);
 
 
 		float loss = net.calculate_loss(target);
@@ -298,14 +311,14 @@ int main(int argc, char **argv) {
 		// print_wide(net.grad_vec.to_vector(), 20);
 		trainer.update(&net.param_vec, net.grad_vec);
 
-		// net.get_fast_grads(fastweight_net.output_grad());
+		net.get_fast_grads(fastweight_net.output_grad());
 		// fastweight_net.output_grad() *= 1000.;
-		// fastweight_net.backward();
-		// fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
+		fastweight_net.backward();
+		fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
 		// cout << fastweight_net.output_grad().to_vector() << endl;
 
-		net.save("volnet.net");
-		// fastweight_net.save("fastnet.net");
+		net.save(exp_dir + "volnet.net");
+		fastweight_net.save(exp_dir + "fastnet.net");
 		// ((LSTMOperation*)((VLSTMOperation*)net.operations[0])->operations[0])->xi.filter_bank.draw_filterbank("filters.png");
 
 		// ((LSTMShiftOperation*)((UniVLSTMOperation*)net.operations[0])->operations[1])->xi.filter_bank.draw_filterbank("filters2.png");

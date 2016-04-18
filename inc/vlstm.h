@@ -14,7 +14,7 @@ struct SubVolumeOperation {
 	SubVolumeOperation(VolumeShape in);
 	virtual ~SubVolumeOperation(){}
 
-	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
+	void add_op(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0, bool param = true);
 	void add_op(std::string in, std::string in2, std::string out, Operation2<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
 	void add_op_rollout(std::string in, std::string out, Operation<F> &op, bool delay = false, VolumeSetMap *reuse = 0, float beta = 1.0);
 
@@ -89,6 +89,7 @@ struct LSTMShiftOperation : public SubVolumeOperation {
 	ConvolutionShiftOperation<F> xr, hr; //remember gate (forget gates dont make sense!)
 	ConvolutionShiftOperation<F> xs, hs; //cell input
 	ConvolutionShiftOperation<F> xo, ho;//, co; //output gate
+	ConvolutionOperation<F> cc;
 
 	GateOperation<F>    gate;   //for gating
 	SigmoidOperation<F> sig;

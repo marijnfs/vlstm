@@ -40,6 +40,12 @@ target_link_libraries( icub
 )
 CUDA_ADD_CUBLAS_TO_TARGET(icub)
 
+cuda_add_executable(icubeval  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} icubeval.cc)
+target_link_libraries( icubeval
+	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lprotobuf -lopencv_core -lopencv_highgui -lopencv_imgproc -lboost_program_options
+)
+CUDA_ADD_CUBLAS_TO_TARGET(icubeval)
+
 cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} mainbrain.cc)
 target_link_libraries( mainbrain
 	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lprotobuf -lopencv_core -lopencv_highgui -lopencv_imgproc -lboost_program_options
