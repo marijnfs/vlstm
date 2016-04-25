@@ -126,10 +126,10 @@ int main(int argc, char **argv) {
 	//Wonmin net
 	//// net.add_fc(16);
 	net.add_vlstm(7, 7, 16);
-	net.add_fc(25);
+	net.add_fc(32);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
+	net.add_fc(32);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
 	net.add_fc(128);
@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
 	int burnin(50);
 
 	// Trainer trainer(net.param_vec.n, .01, .0000001, 200);
-	Trainer trainer(net.param_vec.n, .001, .0000001, 200);
+	Trainer trainer(net.param_vec.n, .03, .00001, 400);
 
 	while (true) {
 	  Timer total_timer;

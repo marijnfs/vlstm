@@ -15,11 +15,6 @@
 
 using namespace std;
 
-void print_last(vector<float> vals, int n) {
-	for (size_t i(vals.size() - n); i < vals.size(); ++i)
-		cout << vals[i] << " ";
-	cout << endl;
-}
 
 int main(int argc, char **argv) {
   //Global::validation() = true;
@@ -47,13 +42,74 @@ int main(int argc, char **argv) {
 	vector<Volume> inputs(n_brains);
 	vector<Volume> outputs(n_brains);
 
+
+	//sub_shape.w = 128;
+	//sub_shape.h = 128;
+	int nstep_x = 1;
+	int nstep_y = 1;
+	int nstep_z = 5;
+
+	VolumeShape data_shape{48, 5, 240, 240};
+	VolumeShape sub_shape = data_shape;
+	sub_shape.z = 25;
+
+	//We need a volume for sub targets
+	VolumeNetwork net(sub_shape);
+
+
+	net.add_vlstm(7, 7, 16);
+	net.add_fc(25);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(45);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(128);
+	net.add_tanh();
+	net.add_fc(5);
+	net.add_softmax();
+
+	// // //Wonmin net
+	//net.add_fc(16);
+	// net.add_vlstm(7, 7, 16);
+	// net.add_fc(25);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(45);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 64);
+	// // net.add_fc(32);
+	// // net.add_tanh();
+	// net.add_fc(5);
+	// net.add_softmax();
+
+	//Wonmin net2
+	// net.add_fc(32);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 32);
+	// net.add_fc(64, .5);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 64);
+	// net.add_fc(128, .5);
+	// net.add_tanh();
+	// net.add_vlstm(7, 7, 128);
+	// net.add_fc(256, .5);
+	// net.add_tanh();
+	// net.add_fc(2);
+	// net.add_softmax();
+
+	net.finish();
+	//net.init_normal(0, .1);
+	net.load(argv[1]);
+	//net.init_uniform(.1);
+
 	for (size_t n(start); n < n_brains; ++n) {
 		ostringstream oss1, oss2, oss3, oss4, oss5;
-		oss1 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1.raw";
-		oss2 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_IR_PP.raw";
-		oss3 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR.raw";
-		oss4 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_PP.raw";
-		oss5 << "mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR_PP.raw";
+		oss1 << "../mrbrain-raw/TestData/" << n+1 <<"/"<< "T1.raw";
+		oss2 << "../mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_IR_PP.raw";
+		oss3 << "../mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR.raw";
+		oss4 << "../mrbrain-raw/TestData/" << n+1 <<"/"<< "T1_PP.raw";
+		oss5 << "../mrbrain-raw/TestData/" << n+1 <<"/"<< "T2_FLAIR_PP.raw";
 		Volume raw_data = open_raw5(oss1.str(), oss2.str(), oss3.str(), oss4.str(), oss5.str(), width, height, depth);
 		//Volume raw_data = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
 	//	raw_data.draw_slice_rgb("test.bmp",10);
@@ -61,8 +117,7 @@ int main(int argc, char **argv) {
 
 
 
-		VolumeShape data_shape = raw_data.shape;
-		VolumeShape sub_shape = raw_data.shape;
+
 
 
 		ostringstream oss_in;
@@ -79,12 +134,6 @@ int main(int argc, char **argv) {
 		oss_in << argv[2] << "/Segm_MRBrainS13_"  << std::setw(2) << std::setfill('0') << n+1 << "-input3" << ".tif";
 		save_tiff(oss_in.str(), raw_data.to_vector(), data_shape, 2);
 
-		//sub_shape.w = 128;
-		//sub_shape.h = 128;
-		sub_shape.z = 15;
-		int nstep_x = 1;
-		int nstep_y = 1;
-		int nstep_z = 10;
 
 		VolumeShape stepsize = VolumeShape{data_shape.z - sub_shape.z, 1, data_shape.w - sub_shape.w, data_shape.h - sub_shape.h};
 
@@ -92,57 +141,7 @@ int main(int argc, char **argv) {
 		stepsize.h = (nstep_y == 1) ? 1 : ((stepsize.h % nstep_y) ? 1 : 0) + stepsize.h / (nstep_y - 1);
 		stepsize.z = (nstep_z == 1) ? 1 : ((stepsize.z % nstep_z) ? 1 : 0) + stepsize.z / (nstep_z - 1);
 
-		//We need a volume for sub targets
-		VolumeNetwork net(sub_shape);
 
-
-		//Marijn net
-	/*	net.add_fc(8);
-		net.add_vlstm(7, 7, 32);
-		net.add_fc(32);
-		net.add_tanh();
-		net.add_vlstm(7, 7, 32);
-		net.add_fc(32);
-		net.add_tanh();
-		net.add_vlstm(7, 7, 32);
-		net.add_fc(32);
-		net.add_tanh();
-		net.add_fc(2);
-		net.add_softmax();*/
-
-		// // //Wonmin net
-		//net.add_fc(16);
-		net.add_vlstm(7, 7, 16);
-		net.add_fc(25);
-		net.add_tanh();
-		net.add_vlstm(7, 7, 32);
-		net.add_fc(45);
-		net.add_tanh();
-		net.add_vlstm(7, 7, 64);
-		// net.add_fc(32);
-		// net.add_tanh();
-		net.add_fc(5);
-		net.add_softmax();
-
-		//Wonmin net2
-		// net.add_fc(32);
-		// net.add_tanh();
-		// net.add_vlstm(7, 7, 32);
-		// net.add_fc(64, .5);
-		// net.add_tanh();
-		// net.add_vlstm(7, 7, 64);
-		// net.add_fc(128, .5);
-		// net.add_tanh();
-		// net.add_vlstm(7, 7, 128);
-		// net.add_fc(256, .5);
-		// net.add_tanh();
-		// net.add_fc(2);
-		// net.add_softmax();
-
-		net.finish();
-		//net.init_normal(0, .1);
-		net.load(argv[1]);
-		//net.init_uniform(.1);
 
 
 		VolumeShape out_shape = VolumeShape{data_shape.z, net.output_shape().c, data_shape.w, data_shape.h};
@@ -204,8 +203,8 @@ int main(int argc, char **argv) {
 		  *final_output_it /= (*final_count_it) + .00001;
 			// *final_output_it = rand_float();
 
-		cout << "the program took (per-image):" << wholetimer.since() << endl;	
-		
+		cout << "the program took (per-image):" << wholetimer.since() << endl;
+
 		cudaDeviceSynchronize();
 
 		ostringstream oss_label;

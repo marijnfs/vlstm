@@ -233,6 +233,10 @@ void VolumeNetwork::save(std::string path) {
 void VolumeNetwork::load(std::string path) {
 	ifstream in(path, ios::binary);
 	vector<float> data = byte_read_vec<float>(in);
+	if (data.size() != param_vec.n) {
+		cout << data.size() << " != " << param_vec.n << endl;
+		throw StringException("load size does not match");
+	}
 	param_vec.from_vector(data);
 }
 

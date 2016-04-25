@@ -52,6 +52,12 @@ target_link_libraries( mainbrain
 )
 CUDA_ADD_CUBLAS_TO_TARGET(mainbrain)
 
+cuda_add_executable(evalbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} evalbrain.cc)
+target_link_libraries( evalbrain
+	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lprotobuf -lopencv_core -lopencv_highgui -lopencv_imgproc -lboost_program_options -ltiff
+)
+CUDA_ADD_CUBLAS_TO_TARGET(evalbrain)
+
 #install(TARGETS mcdnn
 #	LIBRARY DESTINATION /usr/local/lib
 #	ARCHIVE DESTINATION /usr/local/lib

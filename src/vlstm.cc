@@ -176,7 +176,7 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, VolumeSetMap
 
 	xr.bias.init_normal(1., 0.0);
 	xi.bias.init_normal(1., 0.0);
-	cc.filter_bank.init_normal(1.0 / 9.0, 0.);
+	cc.filter_bank.init_normal(1.0 / cc.filter_bank.n_weights(), 0.);
 }
 
 //LSTM operation
@@ -201,7 +201,9 @@ LSTMOperation::LSTMOperation(VolumeShape in, int kg, int ko, int c, bool rollout
 
 	xr.bias.init_normal(1., 0.0);
 	xi.bias.init_normal(1., 0.0);
-	cc.filter_bank.init_normal(1.0 / 9.0, 0.);
+	cc.filter_bank.init_normal(1.0 / cc.filter_bank.n_weights(), 0.);
+
+	// cc.filter_bank.init_normal(1.0 / 9.0, 0.);
 	// xo.bias.init_normal(1., 0.0);
 }
 
@@ -262,9 +264,9 @@ void LSTMOperation::add_operations_rollout(VolumeSetMap *reuse) {
 	add_op("s", "fs", tan, NOW, reuse);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "ct", cc, DELAY, reuse); //hack
-	add_op("ct", "fr", "c", gate, NOW, reuse); //hack
-	// add_op("c", "fr", "c", gate, DELAY, reuse); //
+	// add_op("c", "ct", cc, DELAY, reuse, 0.0, false); //hack
+	// add_op("ct", "fr", "c", gate, NOW, reuse); //hack
+	add_op("c", "fr", "c", gate, DELAY, reuse); //
 
 	add_op("c", "fc", tan, NOW, reuse);
 
@@ -353,9 +355,9 @@ void LSTMShiftOperation::add_operations(VolumeSetMap *reuse) {
 	add_op("s", "fs", tan, NOW, reuse, 0.0);
 
 	add_op("fs", "fi", "c", gate, NOW, reuse);
-	add_op("c", "ct", cc, DELAY, reuse); //hack
-	add_op("ct", "fr", "c", gate, NOW, reuse); //hack
-	// add_op("c", "fr", "c", gate, DELAY, reuse); //
+	// add_op("c", "ct", cc, DELAY, reuse); //hack
+	// add_op("ct", "fr", "c", gate, NOW, reuse); //hack
+	add_op("c", "fr", "c", gate, DELAY, reuse); //
 
 	add_op("c", "fc", tan, NOW, reuse);
 
@@ -507,12 +509,15 @@ UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, Vo
 
 	bool rollout(true);///true
 	operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, rollout, &vsm));
+	// bool rollout(false);///true
+	// operations.push_back(new LSTMOperation(VolumeShape{s.z, s.c, s.w, s.h}, kg, ko, c, &vsm));
 
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm)); //both +x, for the time direction is on this axis (check divide)
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm));
 
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm)); //both +y, for the time direction is on this axis (check divide)
-	operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm));
+	// operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm)); //both +x, for the time direction is on this axis (check divide)
+	// operations.push_back(new LSTMShiftOperation(VolumeShape{s.w, s.c, s.z, s.h}, kg, ko, c, 1, 0, &vsm));
+
+	// operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm)); //both +y, for the time direction is on this axis (check divide)
+	// operations.push_back(new LSTMShiftOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, 0, 1, &vsm));
 
 	clear();
 	for (auto &op : operations)
