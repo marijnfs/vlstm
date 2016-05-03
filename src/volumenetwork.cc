@@ -11,6 +11,7 @@ VolumeNetwork::VolumeNetwork(VolumeShape shape) : n_params(0) {
 
 void VolumeNetwork::forward() {
 	clear();
+
 	for (int i(0); i < operations.size(); i++) {
 		cout << "===" << i << endl;
 		handle_error( cudaGetLastError() );
@@ -18,7 +19,6 @@ void VolumeNetwork::forward() {
 		operations[i]->forward(volumes[i]->x, volumes[i+1]->x);
 		handle_error( cudaGetLastError() );
 	}
-
 }
 
 void VolumeNetwork::backward() {

@@ -58,10 +58,10 @@ int main(int argc, char **argv) {
 
 
 	net.add_vlstm(7, 7, 16);
-	net.add_fc(25);
+	net.add_fc(32);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
-	net.add_fc(45);
+	net.add_fc(32);
 	net.add_tanh();
 	net.add_vlstm(7, 7, 32);
 	net.add_fc(128);
@@ -176,17 +176,17 @@ int main(int argc, char **argv) {
 					  for(int z2(0); z2 < sub_shape.z; z2++) {
 					    for(int c2(0); c2 < out_shape.c; c2++) {
 					      for(int x2(0); x2 < sub_shape.w; x2++) {
-						for(int y2(0); y2 < sub_shape.h; y2++, ++net_output_it){
-						  float dist = pow(float(z2 - sub_shape.z / 2) / (sub_shape.z / 2), 2.0) +
-						    pow(float(x2 - sub_shape.w / 2) / (sub_shape.w / 2), 2.0) +
-						    pow(float(y2 - sub_shape.h / 2) / (sub_shape.h / 2), 2.0);
-						  float weight = exp(-dist);
-						  vector<float>::iterator final_output_it(final_output.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
-						  vector<float>::iterator final_count_it(final_count.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
-						  *final_output_it += *net_output_it * weight;
-						  //*final_output_it += rand_float() * weight;
-						  *final_count_it += weight;
-						}
+							for(int y2(0); y2 < sub_shape.h; y2++, ++net_output_it){
+							  float dist = pow(float(z2 - sub_shape.z / 2) / (sub_shape.z / 2), 2.0) +
+							    pow(float(x2 - sub_shape.w / 2) / (sub_shape.w / 2), 2.0) +
+							    pow(float(y2 - sub_shape.h / 2) / (sub_shape.h / 2), 2.0);
+							  float weight = exp(-dist);
+							  vector<float>::iterator final_output_it(final_output.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
+							  vector<float>::iterator final_count_it(final_count.begin() + out_shape.offset(idxz + z2, c2, idxx + x2, idxy + y2));
+							  *final_output_it += *net_output_it * weight;
+							  //*final_output_it += rand_float() * weight;
+							  *final_count_it += weight;
+							}
 					      }
 					    }
 					  }

@@ -94,6 +94,83 @@ inline void random_next_step_subvolume(Database &db, Volume &input, Volume &targ
 	// throw "";
 }
 
+inline void random_next_step_subvolume_added_info(Database &db, Volume &input, Volume &target, Tensor<float> &actions) {
+	int N = db.count("img");
+	N = N * 9 / 10;//Training set
+	int diff = 1;
+	int n = input.shape.z;
+	int sub_n = n + diff; //1step prediction
+	int start = rand() % (N - sub_n);
+	vector<float> x_last, q_last;
+
+	int n_channel = 1;
+	int n_action = 44;
+	if (input.shape.c != n_channel + n_action)
+		throw StringException("not right amount of input volume channels");
+
+	for (size_t i(0); i < sub_n; ++i) {
+		// cout << i << endl;
+		Img img = db.load<Img>("img", i + start);
+		// assert(img.w() == input.shape.w);
+		// assert(img.h() == input.shape.h);
+		// assert(img.c() == input.shape.c);
+		vector<float> img_correct(input.shape.w * input.shape.h * n_channel);
+		//one channel only, scale down by half
+		for (size_t y(0); y < input.shape.h; ++y)
+			for (size_t x(0); x < input.shape.w; ++x)
+				for (size_t dx(0); dx < 8; ++dx)
+					for (size_t dy(0); dy < 8; ++dy)
+			 			img_correct[y * input.shape.w + x] = img.data((y * 8 + dy) * img.w() + x * 8 + dx) / (8. * 8.);
+
+		normalise(&img_correct);
+
+		Action action = db.load<Action>("action", i + start);
+		vector<float> x(action.x().data(), action.x().data()+action.x().size());
+		vector<float> q(action.q().data(), action.q().data()+action.q().size());
+		// cout << "copy:" << endl;
+		// cout << img.data().data() << " " << input.slice(i) << " " << img.data().size() << endl;
+		// float const *it = img.data().data();
+		// for (size_t c(0); c < img.c(); ++c)
+
+		// cout << "input shape " << input.shape << endl;
+		if (i < n)
+			copy_cpu_to_gpu<>(&img_correct[0], input.slice(i),  img_correct.size());
+
+		// if (i < n)
+			// copy_cpu_to_gpu<>(&img_correct[0], target.slice(i), img_correct.size());
+		if (i >= diff)
+			copy_cpu_to_gpu<>(&img_correct[0], target.slice(i-diff), img_correct.size());
+
+		if (i >= diff) {
+			vector<float> img_action(input.shape.w * input.shape.h * n_action);
+
+			vector<float> a(x);
+			for (size_t i(0); i < a.size(); ++i) a[i] -= x_last[i];
+
+			vector<float> qa(q);
+			for (size_t i(0); i < qa.size(); ++i) qa[i] -= q_last[i];
+
+			copy(qa.begin(), qa.end(), back_inserter(a)); //a contains full action vec
+			assert(a.size() == actions.shape.dcs);
+			// cout << a << endl;
+			// copy_cpu_to_gpu<>(&a[0], actions.ptr() + (i-diff) * a.size(), a.size());
+			copy_cpu_to_gpu<>(&a[0], actions.ptr() + (i-diff) * a.size(), a.size());
+			cout << input.shape << endl;
+			cout << img_action.size() << endl;
+			cout << img_correct.size() << endl;
+			for (size_t n(0); n < a.size(); ++n)
+				fill(&img_action[n * input.shape.w * input.shape.h], &img_action[(n+1) * input.shape.w * input.shape.h], a[n]);
+			cout << i << " " << diff << endl;
+			copy_cpu_to_gpu<>(&img_action[0], input.slice(i-diff) + img_correct.size(), img_action.size()); //add action images to end of regular image
+
+		}
+		x_last = x;
+		q_last = q;
+
+	}
+	// throw "";
+}
+
 int main(int argc, char **argv) {
 	srand(time(0));
 	Handler::set_device(0);
@@ -130,7 +207,9 @@ int main(int argc, char **argv) {
 
 
 	//int kg(3), ko(3), c(1);
+	// VolumeShape train_shape{train_n, img_c + 44, img_w, img_h};
 	VolumeShape train_shape{train_n, img_c, img_w, img_h};
+	VolumeShape target_shape{train_n, img_c, img_w, img_h};
 
 	int kg(7), ko(7), c(1);
 
@@ -232,7 +311,7 @@ int main(int argc, char **argv) {
 	fastweight_net.add_conv(16, 1, 1);
 	fastweight_net.add_tanh();
 
-	fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
+	// fastweight_net.add_conv(net.fast_param_vec.n / train_n, 1, 1);
 
 	fastweight_net.add_tanh();
 	fastweight_net.finish();
@@ -253,7 +332,7 @@ int main(int argc, char **argv) {
 	int burnin(50);
 
 
-	Volume input(train_shape), target(train_shape);
+	Volume input(train_shape), target(target_shape);
 
 	Trainer trainer(net.param_vec.n, .01, .0000001, 400);
 	// Trainer fast_trainer(fastweight_net.n_params, .00001, .0000001, 100);
@@ -264,11 +343,12 @@ int main(int argc, char **argv) {
 		ostringstream epoch_path;
 		epoch_path << exp_dir << epoch << "-";
 		random_next_step_subvolume(db, net.input(), target, fastweight_net.input());
+		// random_next_step_subvolume_added_info(db, net.input(), target, fastweight_net.input());
 		// if (epoch % 100 == 0)
 		// cout << "fastweight input: " << fastweight_net.input().shape() << " " << fastweight_net.input().to_vector() << endl;
 		Timer fasttimer;
 
-		fastweight_net.forward();
+		// fastweight_net.forward();
 
 		cout << "fast forward took:" << fasttimer.since() << endl;
 		// cout << "fastweight output: ";
@@ -276,7 +356,7 @@ int main(int argc, char **argv) {
 		// cout << fastweight_net.output().to_vector() << endl;
 		// cout << fastweight_net.input().to_vector() << endl;
 
-		net.set_fast_weights(fastweight_net.output());
+		// net.set_fast_weights(fastweight_net.output());
 
 		//cout << net.fast_param_vec.to_vector() << endl;
 		// cout << net.param_vec.to_vector() << endl;
@@ -302,22 +382,22 @@ int main(int argc, char **argv) {
 		}
 
 		float loss = net.calculate_loss(target);
-		logger << "epoch: " << epoch << ": loss " << sqrt(loss / train_shape.size()) << "\n";
+		logger << "epoch: " << epoch << ": loss " << sqrt(loss / target_shape.size()) << "\n";
 		last_loss = loss;
 
 		Timer timer;
 		// cout << last(net.volumes)->diff.to_vector() << endl;
 		net.backward();
-		net.grad_vec *= 1.0 / train_shape.size();
+		net.grad_vec *= 1.0 / target_shape.size();
 		// net.fast_grad_vec *= 1.0 / train_shape.size();
 		cout << "backward took:" << timer.since() << "\n\n";
 		cout << "grad: " << endl;
 		// print_wide(net.grad_vec.to_vector(), 20);
 		trainer.update(&net.param_vec, net.grad_vec);
 
-		net.get_fast_grads(fastweight_net.output_grad());
-		fastweight_net.backward();
-		fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
+		// net.get_fast_grads(fastweight_net.output_grad());
+		// fastweight_net.backward();
+		// fast_trainer.update(&fastweight_net.param_vec, fastweight_net.grad_vec);
 		// cout << fastweight_net.output_grad().to_vector() << endl;
 
 		// ((LSTMOperation*)((VLSTMOperation*)net.operations[0])->operations[0])->xi.filter_bank.draw_filterbank("filters.png");

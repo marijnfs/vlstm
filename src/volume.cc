@@ -151,7 +151,7 @@ int VolumeShape::size() {
 }
 
 int VolumeShape::offset(int zz, int cc, int x, int y) {
-	return zz * c * w * h + cc * w * h + x * h + y;
+	return zz * c * w * h + cc * w * h + y * w + x;
 }
 
 int VolumeShape::offsetrm(int zz, int cc, int x, int y) {
