@@ -78,14 +78,14 @@ inline Volume open_raw(std::string name1, std::string name2, std::string name3, 
     return volume;
 }
 
-inline Volume open_raw5(std::string name1, std::string name2, std::string name3, std::string name4, std::string name5, 
+inline Volume open_raw5(std::string name1, std::string name2, std::string name3, std::string name4, std::string name5,
                             int W, int H, int Z)
 {
     std::ifstream file1(name1.c_str(), std::ios::binary);
     std::ifstream file2(name2.c_str(), std::ios::binary);
     std::ifstream file3(name3.c_str(), std::ios::binary);
-    std::ifstream file4(name2.c_str(), std::ios::binary);
-    std::ifstream file5(name3.c_str(), std::ios::binary);
+    std::ifstream file4(name4.c_str(), std::ios::binary);
+    std::ifstream file5(name5.c_str(), std::ios::binary);
 
     if (!file1 || !file2 || !file3 || !file4 || !file5)
         throw StringException(name1.c_str());

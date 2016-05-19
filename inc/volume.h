@@ -44,7 +44,7 @@ struct Volume {
   	std::vector<F> to_vector();
   	void from_vector(std::vector<F> &vec);
   	void thresholding(std::vector<F> &data, float threshold);
-	void draw_slice(std::string filename, int slice, float th=0.0);
+	void draw_slice(std::string filename, int slice, int channel = 0);
 	void draw_slice_rgb(std::string filename, int slice);
 	void dropout(float p);
 	float *data();

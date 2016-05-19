@@ -117,12 +117,12 @@ void Volume::thresholding(std::vector<F> &data, float threshold) {
 		else				v = 0.0;
 }
 
-void Volume::draw_slice(string filename, int slice, float th) {
+void Volume::draw_slice(string filename, int slice, int channel) {
 	vector<F> data = to_vector();
-	if (th > 0.0)	thresholding(data, th);
+	//if (th > 0.0)	thresholding(data, th);
 
 	cout << "drawing slice " << slice << " : " << shape << " to " << filename << endl;
-	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size]);
+	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size + channel * shape.w * shape.h]);
 }
 
 void Volume::draw_slice_rgb(string filename, int slice) {

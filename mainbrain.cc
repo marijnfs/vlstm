@@ -187,7 +187,7 @@ int main(int argc, char **argv) {
 	int burnin(50);
 
 	// Trainer trainer(net.param_vec.n, .01, .0000001, 200);
-	Trainer trainer(net.param_vec.n, .03, .00001, 400);
+	Trainer trainer(net.param_vec.n, .03, .0001, 1000);
 
 	while (true) {
 	  Timer total_timer;

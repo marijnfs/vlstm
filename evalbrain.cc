@@ -113,12 +113,14 @@ int main(int argc, char **argv) {
 		Volume raw_data = open_raw5(oss1.str(), oss2.str(), oss3.str(), oss4.str(), oss5.str(), width, height, depth);
 		//Volume raw_data = open_raw(oss1.str(), oss2.str(), oss3.str(), width, height, depth);
 	//	raw_data.draw_slice_rgb("test.bmp",10);
-
-
-
-
-
-
+		
+		/*for (int ch(0); ch < 5; ++ch)
+		  for (size_t asd(0); asd<40; ++asd) {
+		    ostringstream osstmp;
+		    osstmp << "mrbrain-test/channelbrain-"  << std::setw(2) << std::setfill('0') << n+1 << "-" << asd << "-" << ch << ".png";
+		    raw_data.draw_slice(osstmp.str(), asd, ch);
+		  }
+		*/
 
 		ostringstream oss_in;
 		oss_in << argv[2] << "/Segm_MRBrainS13_"  << std::setw(2) << std::setfill('0') << n+1 << "-input1" << ".tif";
