@@ -70,7 +70,68 @@ VolumeShape FCVolumeOperation::output_shape(VolumeShape s) {
 	return VolumeShape{s.z, c, s.w, s.h};
 }
 
+///Classify
+ClassifyOperation::ClassifyOperation(VolumeShape shape_, int n_classes_) :
+  n_classes(n_classes_),
+  op(shape_.size(), n_classes_ , 1, 1),
+  shape(shape_),
+  tin(1, shape_.size(), 1, 1, 0),
+  tout(1, n_classes_, 1, 1, 0),
+  tin_err(1, shape_.size(), 1, 1, 0),
+  tout_err(1, n_classes_, 1, 1, 0)
+{}
 
+void ClassifyOperation::forward(Volume &in, Volume &out)  {
+	tin.data = in.data();
+	tout.data = out.data();
+	op.forward(tin, tout);
+}
+
+void ClassifyOperation::backward_weights(VolumeSet &in, VolumeSet &out){
+	tin.data = in.x.data();
+	tout_err.data = out.diff.data();
+
+	op.backward_weights(tin, tout_err);
+	// op.scale_grad(1.0 / (shape.z * shape.w * shape.h));
+}
+
+void ClassifyOperation::backward(VolumeSet &in, VolumeSet &out) {
+	tin.data = in.x.data();
+	tout.data = out.x.data();
+	tin_err.data = in.diff.data();
+	tout_err.data = out.diff.data();
+
+	op.backward(tin, tout, tout_err, tin_err);
+}
+
+void ClassifyOperation::forward_dry_run(Volume &in, Volume &out) {
+	tin.data = in.data();
+	tout.data = out.data();
+	op.forward_dry_run(tin, tout);
+}
+
+void ClassifyOperation::update(float lr) {
+	op.update(lr);
+}
+
+void ClassifyOperation::init_normal(float mean, float std) {
+	op.init_normal(mean, std);
+}
+
+void ClassifyOperation::init_uniform(float std) {
+	op.init_uniform(std);
+}
+
+void ClassifyOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads) {
+	op.register_params(params, fast_params, grads, fast_grads);
+}
+
+VolumeShape ClassifyOperation::output_shape(VolumeShape s) {
+	return VolumeShape{s.z * s.w * s.h, n_classes, 1, 1};
+}
+
+
+///// Softmax
 SoftmaxVolumeOperation::SoftmaxVolumeOperation(VolumeShape shape) :
 	tin(shape.z, shape.c, shape.w, shape.h, 0),
 	tout(shape.z, shape.c, shape.w, shape.h, 0),

@@ -42,6 +42,31 @@ struct FCVolumeOperation : public VolumeOperation {
 	float dropout=0.0;
 };
 
+struct ClassifyOperation : public VolumeOperation {
+ ClassifyOperation(VolumeShape shape, int n_classes_);
+
+	void forward(Volume &in, Volume &out);
+	void backward_weights(VolumeSet &in, VolumeSet &out);
+	void backward(VolumeSet &in, VolumeSet &out);
+	void forward_dry_run(Volume &in, Volume &out);
+	void update(float lr);
+
+	void init_normal(float mean, float std);
+	void init_uniform(float std);
+	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads);
+	VolumeShape output_shape(VolumeShape s);
+	void describe(std::ostream &out) { out << "fc " << tin.c << " " << tout.c; }
+
+
+	int n_classes;
+	ConvolutionOperation<F> op;
+	VolumeShape shape;
+
+	Tensor<F> tin, tout;
+	Tensor<F> tin_err, tout_err;
+
+};
+
 struct SoftmaxVolumeOperation : public VolumeOperation {
 	SoftmaxVolumeOperation(VolumeShape shape);
 

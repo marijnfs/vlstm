@@ -46,9 +46,13 @@ file(GLOB CPP_HEADERS inc/*.h)
 #set_property(SOURCE ${CU_SOURCE} PROPERTY COMPILE_FLAGS -O3)
 #set_property(SOURCE ${CPP_HEADERS} PROPERTY COMPILE_FLAGS -O3)
 
-cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} mainbrain.cc)
-target_link_libraries( mainbrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn )
-CUDA_ADD_CUBLAS_TO_TARGET(mainbrain)
+cuda_add_executable(autismtrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} autismtrain.cc)
+target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn)
+CUDA_ADD_CUBLAS_TO_TARGET(autismtrain)
+
+#cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} mainbrain.cc)
+#target_link_libraries( mainbrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn )
+#CUDA_ADD_CUBLAS_TO_TARGET(mainbrain)
 
 
 #cuda_add_executable(icub  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} icub.cc)
