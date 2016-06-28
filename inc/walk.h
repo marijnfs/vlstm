@@ -92,10 +92,10 @@ inline int walk_dir(char *dname, char *pattern, int spec, std::vector<std::strin
   return res;
 }
 
-inline std::vector<std::string> walk(std::string filename)
+inline std::vector<std::string> walk(std::string filename, std::string pattern = "")
 {
   std::vector<std::string> files;
-  int r = walk_dir(const_cast<char*>(filename.c_str()), "", WS_DEFAULT|WS_MATCHDIRS, files);
+  int r = walk_dir(const_cast<char*>(filename.c_str()), const_cast<char*>(pattern.c_str()), WS_DEFAULT|WS_MATCHDIRS, files);
   switch(r) {
   case WALK_OK:break;
   case WALK_BADIO: throw Err("IO error");
