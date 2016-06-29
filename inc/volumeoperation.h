@@ -42,8 +42,8 @@ struct FCVolumeOperation : public VolumeOperation {
 	float dropout=0.0;
 };
 
-struct ClassifyOperation : public VolumeOperation {
- ClassifyOperation(VolumeShape shape, int n_classes_);
+struct ClassifyVolumeOperation : public VolumeOperation {
+ ClassifyVolumeOperation(VolumeShape shape, int n_classes_);
 
 	void forward(Volume &in, Volume &out);
 	void backward_weights(VolumeSet &in, VolumeSet &out);

@@ -45,83 +45,26 @@ int main(int argc, char **argv) {
 
 	vector<string> paths = walk(autism_path, ".nii");
 
-	for (auto path : paths) {
-	  cout << path << endl;
-	  NiftiVolume nifti_volume(path);
-	  Volume vol = nifti_volume.get_volume();
-	  vol.draw_slice("test.png", 40);
-	  return 0;
-	}
-	return 0;	  //inputs[n].draw_slice_rgb("input.bmp",10);
+	NiftiVolume nifti_volume(paths[0]);
+	Volume input_vol = nifti_volume.get_volume();
+	input_vol.draw_slice("test.png", 40);
+	
+	//VolumeShape sub_shape{30, 1, 64, 64};
+	VolumeNetwork net(input_vol.shape);
 
-
-	VolumeShape sub_shape{30, 1, 64, 64};
-	VolumeNetwork net(sub_shape);
-
-	// net.add_fc(8);
-	// net.add_vlstm(7, 7, 8);
-	// net.add_fc(8);
-	// net.add_tanh();
-	// net.add_fc(2);
-	// net.add_softmax();
-
-
-	//Marijn net
-	//Wonmin net
-	// net.add_fc(16);
-	// net.add_vlstm(7, 7, 16);
-	// net.add_fc(32);
-	// net.add_tanh();
-	// net.add_vlstm(7, 7, 32);
-	// net.add_fc(64);
-	// net.add_tanh();
-	// net.add_vlstm(7, 7, 64);
-	// net.add_fc(64);
-	// net.add_tanh();
-	// net.add_fc(5);
-	// net.add_softmax();
-
-	//Wonmin net
-	//// net.add_fc(16);
-	net.add_vlstm(7, 7, 16);
-	net.add_fc(32);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 32);
-	net.add_fc(32);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 32);
-	net.add_fc(128);
-	net.add_tanh();
-	net.add_fc(5);
-	net.add_softmax();
-
-	//Wonmin net2
-	/*net.add_fc(32);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 32);
-	net.add_fc(64, .1);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 64);
-	net.add_fc(128, .1);
-	net.add_tanh();
-	net.add_vlstm(7, 7, 128);
-	net.add_fc(256, .1);
-	net.add_tanh();
+	net.add_vlstm(7, 7, 4);
 	net.add_fc(2);
+	net.add_classify(2);
 	net.add_softmax();
-	*/
-
-
 	net.finish();
+
 	if (argc > 1)
 	  net.load(argv[1]);
 	else
-	  net.init_uniform(.1);
-
-	cout << net.volumes[0]->x.shape << endl;
+	  net.init_normal(0.0, .1);
 
 	logger << "begin description\n";
-	logger << "subvolume shape " << sub_shape << "\n";
+	//logger << "subvolume shape " << sub_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
 
@@ -142,8 +85,15 @@ int main(int argc, char **argv) {
 	  net.forward();
 
 	  Volume target(VolumeShape{1, 2, 1, 1});
+
+	  vector<float> autism({1,0}), control({0,1});
+	  if (true)
+	    target.from_vector(autism);
+	  else
+	    target.from_vector(control);
 	  float loss = net.calculate_loss(target);
-	  logger << "epoch: " << epoch << ": loss " << (loss / sub_shape.size()) << "\n";
+	  cout << "output: " << net.output().to_vector() << endl;
+	  logger << "epoch: " << epoch << ": loss " << loss << "\n";
 	  last_loss = loss;
 
 	  Timer timer;

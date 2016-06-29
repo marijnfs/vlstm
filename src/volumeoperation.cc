@@ -71,7 +71,7 @@ VolumeShape FCVolumeOperation::output_shape(VolumeShape s) {
 }
 
 ///Classify
-ClassifyOperation::ClassifyOperation(VolumeShape shape_, int n_classes_) :
+ClassifyVolumeOperation::ClassifyVolumeOperation(VolumeShape shape_, int n_classes_) :
   n_classes(n_classes_),
   op(shape_.size(), n_classes_ , 1, 1),
   shape(shape_),
@@ -81,13 +81,13 @@ ClassifyOperation::ClassifyOperation(VolumeShape shape_, int n_classes_) :
   tout_err(1, n_classes_, 1, 1, 0)
 {}
 
-void ClassifyOperation::forward(Volume &in, Volume &out)  {
+void ClassifyVolumeOperation::forward(Volume &in, Volume &out)  {
 	tin.data = in.data();
 	tout.data = out.data();
 	op.forward(tin, tout);
 }
 
-void ClassifyOperation::backward_weights(VolumeSet &in, VolumeSet &out){
+void ClassifyVolumeOperation::backward_weights(VolumeSet &in, VolumeSet &out){
 	tin.data = in.x.data();
 	tout_err.data = out.diff.data();
 
@@ -95,7 +95,7 @@ void ClassifyOperation::backward_weights(VolumeSet &in, VolumeSet &out){
 	// op.scale_grad(1.0 / (shape.z * shape.w * shape.h));
 }
 
-void ClassifyOperation::backward(VolumeSet &in, VolumeSet &out) {
+void ClassifyVolumeOperation::backward(VolumeSet &in, VolumeSet &out) {
 	tin.data = in.x.data();
 	tout.data = out.x.data();
 	tin_err.data = in.diff.data();
@@ -104,30 +104,30 @@ void ClassifyOperation::backward(VolumeSet &in, VolumeSet &out) {
 	op.backward(tin, tout, tout_err, tin_err);
 }
 
-void ClassifyOperation::forward_dry_run(Volume &in, Volume &out) {
+void ClassifyVolumeOperation::forward_dry_run(Volume &in, Volume &out) {
 	tin.data = in.data();
 	tout.data = out.data();
 	op.forward_dry_run(tin, tout);
 }
 
-void ClassifyOperation::update(float lr) {
+void ClassifyVolumeOperation::update(float lr) {
 	op.update(lr);
 }
 
-void ClassifyOperation::init_normal(float mean, float std) {
+void ClassifyVolumeOperation::init_normal(float mean, float std) {
 	op.init_normal(mean, std);
 }
 
-void ClassifyOperation::init_uniform(float std) {
+void ClassifyVolumeOperation::init_uniform(float std) {
 	op.init_uniform(std);
 }
 
-void ClassifyOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads) {
+void ClassifyVolumeOperation::register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads) {
 	op.register_params(params, fast_params, grads, fast_grads);
 }
 
-VolumeShape ClassifyOperation::output_shape(VolumeShape s) {
-	return VolumeShape{s.z * s.w * s.h, n_classes, 1, 1};
+VolumeShape ClassifyVolumeOperation::output_shape(VolumeShape s) {
+	return VolumeShape{1, n_classes, 1, 1};
 }
 
 

@@ -73,10 +73,10 @@ void Volume::fill(F val) {
 }
 
 void Volume::from_volume(Volume &other) {
-	cout << shape << " " << other.shape << endl;
-	cout << shape.size() << " " << other.shape.size() << endl;
 	if (size() != other.size()) {
- 			throw StringException("sizes don't match");
+	  cout << shape << " " << other.shape << endl;
+	  cout << shape.size() << " " << other.shape.size() << endl;
+	  throw StringException("sizes don't match");
 	}
 	handle_error( cudaMemcpy(buf->data, other.buf->data, other.size() * sizeof(F), cudaMemcpyDeviceToDevice));
 }

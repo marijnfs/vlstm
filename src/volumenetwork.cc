@@ -197,6 +197,15 @@ void VolumeNetwork::add_fc(int c, float dropout) {
 	volumes.push_back(new VolumeSet(shape));
 }
 
+void VolumeNetwork::add_classify(int n_classes) {
+	cout << "adding classification" << endl;
+	auto fc = new ClassifyVolumeOperation(last(shapes), n_classes);
+	auto shape = fc->output_shape(last(shapes));
+	operations.push_back(fc);
+	shapes.push_back(shape);
+	volumes.push_back(new VolumeSet(shape));
+}
+
 void VolumeNetwork::add_softmax() {
 	cout << "adding softmax" << endl;
 	auto softmax = new SoftmaxVolumeOperation(last(shapes));
