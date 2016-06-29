@@ -3,6 +3,8 @@
 
 cmake_minimum_required (VERSION 2.8.11)
 project (VLSTM)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmakefind/")
+
 #SET(CMAKE_BUILD_TYPE CACHE RELEASE STRING "Build Type")
 
 if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
@@ -11,7 +13,9 @@ endif()
 
 find_package(CUDA QUIET REQUIRED)
 find_package(Protobuf REQUIRED)
-find_package( OpenCV REQUIRED )
+find_package(OpenCV REQUIRED)
+find_package(NIFTI REQUIRED)
+include_directories(${NIFTI_INCLUDE_DIRS})
 
 #find_library(PROTOBUF_LIBRARY protobuf HINTS /usr/lib/x86_64-linux-gnu REQUIRED)
 #find_library(PROTOBUF_LIBRARY REQUIRED)
@@ -47,7 +51,7 @@ file(GLOB CPP_HEADERS inc/*.h)
 #set_property(SOURCE ${CPP_HEADERS} PROPERTY COMPILE_FLAGS -O3)
 
 cuda_add_executable(autismtrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} autismtrain.cc)
-target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn)
+target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES})
 CUDA_ADD_CUBLAS_TO_TARGET(autismtrain)
 
 #cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} mainbrain.cc)
