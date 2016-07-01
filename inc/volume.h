@@ -33,8 +33,9 @@ struct Volume {
 	float *slice(int z);
 	TensorShape slice_shape();
 	void zero(int offset = 0);
-	void rand_zero(float p);
+        void rand_zero(float p);
 	void init_normal(F mean, F std);
+        void add_normal(F mean, F std);
 	void fill(F val);
   	int size();
   	float norm();

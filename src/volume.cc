@@ -38,8 +38,8 @@ Volume& Volume::operator=(Volume const &o) {
 }
 
 Volume::~Volume(){
-	// if (!reused)
-		// delete buf;
+  if (!reused)
+    delete buf;
 }
 
 
@@ -63,7 +63,15 @@ void Volume::rand_zero(float p) {
 void Volume::init_normal(F mean, F std) {
 	// size_t even_size(((size() + 1) / 2) * 2);
 	// zero();
-	buf->init_normal(mean, std);
+	buf->add_normal(mean, std);
+	// ::init_normal(data, size(), mean, std);
+	// handle_error( curandGenerateNormal(Handler::curand(), data, even_size, mean, std) );
+}
+
+void Volume::add_normal(F mean, F std) {
+	// size_t even_size(((size() + 1) / 2) * 2);
+	// zero();
+	buf->add_normal(mean, std);
 	// ::init_normal(data, size(), mean, std);
 	// handle_error( curandGenerateNormal(Handler::curand(), data, even_size, mean, std) );
 }

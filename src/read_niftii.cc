@@ -21,19 +21,22 @@ NiftiVolume::NiftiVolume(string filename) {
 
   assert(hdr.datatype == 4);
   vector<uint16_t> uint16_data(data.size());
-  
+  vector<bool> mask(data.size());
+  for (int n(0); n < mask.size(); ++n) if (uint16_data[n] == 0) mask[n] = true;
   in_file.seekg(hdr.vox_offset, ios_base::beg);  
   in_file.read(reinterpret_cast<char*>(&uint16_data[0]), sizeof(uint16_t) * data.size());
 
   copy(uint16_data.begin(), uint16_data.end(), data.begin());
-  normalize(&data);
+
+  
+  normalize_masked(&data, mask);
   // for (size_t i(0); i < data.size(); ++i)
   //cout << data[i] << " ";
-  cout << endl;
+  //  cout << endl;
 }
 
 Volume NiftiVolume::get_volume() {
-  Volume volume(VolumeShape{hdr.dim[1], 1, hdr.dim[2], hdr.dim[3]});
+  Volume volume(VolumeShape{hdr.dim[3], 1, hdr.dim[1], hdr.dim[2]});
   //Volume volume(VolumeShape{hdr.dim[3], 1, hdr.dim[2], hdr.dim[1]});
   //Volume volume(VolumeShape{hdr.dim[2], 1, hdr.dim[1], hdr.dim[3]});
   volume.from_vector(data);
