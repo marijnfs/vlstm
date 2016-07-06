@@ -1,7 +1,7 @@
 #include "trainer.h"
 #include "log.h"
 
-Trainer::Trainer(int param_n, float start_lr_, float end_lr_, float half_time) :
+Trainer::Trainer(int param_n, float start_lr_, float end_lr_, float half_time, float momentum) :
 a(param_n),
 b(param_n),
 c(param_n),
@@ -9,7 +9,7 @@ d(param_n),
 e(param_n),
 rmse(param_n),
 var_decay(0.9),
-mean_decay(0.99),
+mean_decay(momentum),
 eps(.00001),
 base_lr(start_lr_ - end_lr_),
 end_lr(end_lr_),

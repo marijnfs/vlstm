@@ -17,6 +17,10 @@ find_package(OpenCV REQUIRED)
 find_package(NIFTI REQUIRED)
 include_directories(${NIFTI_INCLUDE_DIRS})
 
+find_package(VTK REQUIRED)
+include_directories(${VTK_INCLUDE_DIRS})
+
+
 #find_library(PROTOBUF_LIBRARY protobuf HINTS /usr/lib/x86_64-linux-gnu REQUIRED)
 #find_library(PROTOBUF_LIBRARY REQUIRED)
 #include_directories(${PROTOBUF_INCLUDE_DIRS})
@@ -51,8 +55,16 @@ file(GLOB CPP_HEADERS inc/*.h)
 #set_property(SOURCE ${CPP_HEADERS} PROPERTY COMPILE_FLAGS -O3)
 
 cuda_add_executable(autismtrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} autismtrain.cc)
-target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES})
+target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
 CUDA_ADD_CUBLAS_TO_TARGET(autismtrain)
+
+cuda_add_executable(autismexamine  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} autismexamine.cc)
+target_link_libraries(autismexamine ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+CUDA_ADD_CUBLAS_TO_TARGET(autismexamine)
+
+cuda_add_executable(bratstrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bratstrain.cc)
+target_link_libraries(bratstrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+CUDA_ADD_CUBLAS_TO_TARGET(bratstrain)
 
 #cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} mainbrain.cc)
 #target_link_libraries( mainbrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn )

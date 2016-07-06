@@ -129,9 +129,18 @@ void Volume::draw_slice(string filename, int slice, int channel) {
 	vector<F> data = to_vector();
 	//if (th > 0.0)	thresholding(data, th);
 
-	cout << "drawing slice " << slice << " : " << shape << " to " << filename << endl;
+	//cout << "drawing slice " << slice << " : " << shape << " to " << filename << endl;
 	write_img1c(filename, shape.w, shape.h, &data[slice * slice_size + channel * shape.w * shape.h]);
 }
+
+void Volume::draw_volume(string filename, int channel) {
+  std::string name(200, ' ');
+  for (size_t z(0); z < shape.z; ++z) {
+    sprintf(&name[0], filename.c_str(), z);
+    draw_slice(name, z, channel);
+  }
+}
+
 
 void Volume::draw_slice_rgb(string filename, int slice) {
 	vector<F> data = to_vector();

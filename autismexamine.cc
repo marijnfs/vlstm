@@ -64,11 +64,8 @@ int main(int argc, char **argv) {
 	NiftiVolume nifti_volume(paths[0]);
 	Volume input_vol = nifti_volume.get_volume();
 	input_vol.add_normal(0, .6);
-	string name(200, ' ');
-	for (size_t i(0); i < input_vol.shape.z; ++i) {
-	  sprintf(&name[0], "test_%i.png", i);
-	  input_vol.draw_slice(name, i);
-	}
+
+	//	input_vol.draw_volume("test_%i.png", 0);
 
 	//VolumeShape sub_shape{30, 1, 64, 64};
 	VolumeNetwork net(input_vol.shape);
@@ -84,75 +81,72 @@ int main(int argc, char **argv) {
 	if (argc > 1)
 	  net.load(argv[1]);
 	else
-	  net.init_normal(0.0, 0.01);
-
+	  throw Err("Need a net as argument");
+	
 	logger << "begin description\n";
 	//logger << "subvolume shape " << sub_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
 
 
-	//Training Setup
-	
-	int epoch(0);
-	Trainer trainer(net.param_vec.n, .0001, .0000001, 1000);
-	epoch = 0;
-	float last_avg_loss = 9999999.;
-
-	while (true) {
-
-	  vector<int> indices(volumes.size());
-	  for (int i(0); i < indices.size(); ++i)
-	    indices[i] = i;
-	  random_shuffle(indices.begin(), indices.end());
-
-	  float total_loss(0);
-	  for (auto index : indices) {
+	//Analysis setup
+	for (int index(10); index < volumes.size(); ++index) {
 	    Volume input_volume = volumes[index].get_volume();
-	    float noise(.5);
-	    input_volume.add_normal(.0, noise); //
 	    net.input().from_volume(input_volume);
-	    Timer total_timer;
-	    //ostringstream ose;
-	    //ose << img_path << "mom_sub_in-" << epoch << ".png";
-	    //copy_subvolume(inputs[brainnum], net.input(), outputs[brainnum], label_subset, false, rand()%2, false, false); // rotate, xflip, yflip, zflip
-	    //copy stuff to network input
-	    net.forward();
+
+	    {
+	      string name(200, ' ');
+	      Volume &v(net.input());
+	      for (size_t i(0); i < v.shape.z; ++i) {
+		sprintf(&name[0], "original_%i.png", i);
+		v.draw_slice(name, i);
+	      }
+	    }
 	    
+	    //Create Target
 	    Volume target(VolumeShape{1, 2, 1, 1});
-	    
 	    vector<float> autism({1,0}), control({0,1});
 	    if (has_autism[index])
 	      target.from_vector(autism);
 	    else
 	      target.from_vector(control);
-	    float loss = net.calculate_loss(target);
-	    cout << "output: " << net.output().to_vector() << endl;
-	    cout << "target: " << target.to_vector() << endl;
-	    logger << "epoch: " << epoch << ": loss " << loss << "\n";
-	    total_loss += loss;
 	    
-	    Timer timer;
-	    net.backward();
-	    cout << "backward took:" << timer.since() << "\n\n";
+	    Trainer adjuster(net.input().size(), -.3, -.03, 20, .8);
+	    for (int step(0); step < 40; ++step) {
+	      //Run Network
+	      net.forward();
+
+	      //net.volumes[2]->x.draw_volume("act_0_%i.png", 0);
+	      //net.volumes[2]->x.draw_volume("act_1_%i.png", 1);
+	      float loss = net.calculate_loss(target);
+	      cout << "output: " << net.output().to_vector() << endl;
+	      cout << "target: " << target.to_vector() << endl;
+	      net.backward();
+
+	      net.volumes[1]->diff.draw_volume("diff_1_0_%i.png", 0);
+	      net.volumes[1]->diff.draw_volume("diff_1_1_%i.png", 1);
+	      net.volumes[1]->diff.draw_volume("diff_1_2_%i.png", 2);
+	      net.volumes[1]->diff.draw_volume("diff_1_3_%i.png", 3);
+
+	      net.volumes[2]->diff.draw_volume("diff_2_0_%i.png", 0);
+	      net.volumes[2]->diff.draw_volume("diff_2_1_%i.png", 1);
+	      net.volumes[2]->diff.draw_volume("diff_2_2_%i.png", 2);
+	      net.volumes[2]->diff.draw_volume("diff_2_3_%i.png", 3);
+
+	      return 0;
+
+	      cout << "grad: "; print_wide(net.volumes[0]->diff.to_vector(), 20);
+	      cout << "input: "; print_wide(net.volumes[0]->x.to_vector(), 20);
+	      adjuster.update(net.volumes[0]->x.buf, *net.volumes[0]->diff.buf);
+	      //*(net.volumes[0]->diff.buf) *= 300;
+	      //net.volumes[0]->x -= net.volumes[0]->diff;
+	    }
+
+	    
+	    net.volumes[0]->x.draw_volume("adjusted_%i.png", 0);
 	      
-	    trainer.update(&net.param_vec, net.grad_vec);
-	    cout << "grad: ";
-	    print_wide(net.grad_vec.to_vector(), 20); //Slow
-	    cout << "param: ";
-	    print_wide(net.param_vec.to_vector(), 20); //Slow
 	    
-	    ++epoch;
-	    cout << "epoch time: " << total_timer.since() <<" lr: " << trainer.lr() << endl;
-	  }
-
-	  float avg_loss = total_loss / indices.size();
-	  cout << "avg loss: " << avg_loss << endl;
-	  logger << "avg loss: " << avg_loss << "\n";
-
-	  if (avg_loss < last_avg_loss)
-	    net.save(netname);
-	  last_avg_loss = avg_loss;
+	    return 0;
 	}
 
 	cudaDeviceSynchronize();
