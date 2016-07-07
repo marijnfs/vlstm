@@ -9,9 +9,8 @@
 #include <vtkSmartPointer.h>
 using namespace std;
 
-Volume read_vtk(string filename) {
-  Volume vol;
 
+Volume read_vtk(string filename) {
   vtkSmartPointer<vtkMetaImageReader> reader =
     vtkSmartPointer<vtkMetaImageReader>::New();
   reader->SetFileName(filename.c_str());
@@ -29,13 +28,28 @@ Volume read_vtk(string filename) {
   copy(data->GetDimensions(), data->GetDimensions() + dims.size(), &dims[0]);
   cout << "scalar type: " << data->GetScalarType() << endl;
   cout << "dims: " << dims << endl;
-  return vol;
-  for (size_t z(0); z < dims[2]; ++z)
-    for (size_t y(0); y < dims[1]; ++y) {
-      for (size_t x(0); x < dims[0]; ++x)
-	cout << (int)*reinterpret_cast<unsigned char*>(data->GetScalarPointer(x, y, z)) << " ";
-      cout << endl;
-    }
-				   
+  
+  int n_channels = reader->GetNumberOfComponents();
+  int width(dims[0]), height(dims[1]), depth(dims[2]);
+
+  //Copy data into volume
+  Volume vol(VolumeShape{depth, n_channels, width, height});
+  vector<float> vec_data(vol.size());
+  if (data->GetScalarType() == 3) {
+    cout << "unsigned char, assuming classification" << endl;
+    copy_vtk_to_vector<unsigned char>(data, vec_data, depth, width, height, n_channels);
+  }
+  if (data->GetScalarType() == 4) {
+    cout << "short, assuming data" << endl;
+    copy_vtk_to_vector<short>(data, vec_data, depth, width, height, n_channels);
+  }
+
+  //Post Process
+  vector<bool> mask(vec_data.size());
+  for (int n(0); n < mask.size(); ++n) if (vec_data[n] == 0) mask[n] = true;
+  normalize_masked(&vec_data, mask);
+
+  
+  vol.from_vector(vec_data);
   return vol;
 }

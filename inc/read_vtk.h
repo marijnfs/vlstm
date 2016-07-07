@@ -3,6 +3,25 @@
 
 #include <string>
 #include "volume.h"
+#include <vtkImageData.h>
+#include <iostream>
+
+template <typename T>
+void copy_vtk_to_vector(vtkImageData *data, std::vector<float> &vec, int depth, int width, int height, int n_channels) {
+  std::vector<float>::iterator it = vec.begin();
+  
+  for (size_t z(0); z < depth; ++z)
+    for (size_t c(0); c < n_channels; ++c)
+      for (size_t y(0); y < height; ++y) {
+	for (size_t x(0); x < width; ++x) {
+	  //std::cout << (float)*(reinterpret_cast<T*>(data->GetScalarPointer(x, y, z)) + c) << " ";;
+	  *it = (float)*(reinterpret_cast<T*>(data->GetScalarPointer(x, y, z)) + c) ;
+	  ++it;
+	}
+	//std::cout << std::endl;
+      }
+  
+}
 
 Volume read_vtk(std::string filename);
 

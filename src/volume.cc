@@ -1,6 +1,8 @@
 #include "volume.h"
 #include "util.h"
 #include "img.h"
+#include "gzstream.h"
+
 #include <cmath>
 
 using namespace std;
@@ -13,16 +15,18 @@ Volume::Volume(VolumeShape shape_) : shape(shape_), slice_size(shape_.c * shape_
 	zero();
 }
 
-Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), slice_size(shape_.c * shape_.w * shape_.h), reused(true) {
+Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), buf(reuse_buffer.buf),
+							   slice_size(shape_.c * shape_.w * shape_.h), reused(true)							   
+{
 	if (size() > reuse_buffer.buf->n) {
 		cout << "resizing " << size() << " / "  << reuse_buffer.buf->n << endl;
 		reuse_buffer.buf->resize(size());
 	}
 	//data = reuse_buffer.data;
-	buf = reuse_buffer.buf;
 	zero();
 }
 
+/*
 Volume::Volume(Volume &&o) : shape(o.shape), buf(o.buf), slice_size(o.slice_size), reused(o.reused) {
 }
 
@@ -36,6 +40,7 @@ Volume& Volume::operator=(Volume const &o) {
 	reused  = o.reused;
 	return *this;
 }
+*/
 
 Volume::~Volume(){
   if (!reused)
@@ -59,6 +64,40 @@ void Volume::rand_zero(float p) {
 	buf->rand_zero(p);
 }
 
+void Volume::save_file(string filename) {
+  ogzstream out_file(filename.c_str());
+  byte_write<int32_t>(out_file, shape.z);
+  byte_write<int32_t>(out_file, shape.c);
+  byte_write<int32_t>(out_file, shape.w);
+  byte_write<int32_t>(out_file, shape.h);
+
+  vector<float> data = to_vector();
+  for (auto v : data)
+    byte_write<float>(out_file, v);
+
+}
+
+void Volume::load_file(string filename) {
+
+  //Read Header
+  igzstream in_file(filename.c_str());
+  shape.z = byte_read<int32_t>(in_file);
+  shape.c = byte_read<int32_t>(in_file);
+  shape.w = byte_read<int32_t>(in_file);
+  shape.h = byte_read<int32_t>(in_file);
+
+  //Setup Internal Parameters
+  vector<float> data(shape.size());
+  buf->resize(data.size());
+  slice_size = shape.slice_size();
+
+  //Read Data
+  for (auto &v : data)
+    v = byte_read<float>(in_file);
+
+  //To GPU
+  from_vector(data);
+}
 
 void Volume::init_normal(F mean, F std) {
 	// size_t even_size(((size() + 1) / 2) * 2);
@@ -163,16 +202,20 @@ float *Volume::data() {
 }
 
 
-int VolumeShape::size() {
+int VolumeShape::size() const {
 	return z * c * w * h;
 }
 
-int VolumeShape::offset(int zz, int cc, int x, int y) {
+int VolumeShape::offset(int zz, int cc, int x, int y) const {
 	return zz * c * w * h + cc * w * h + y * w + x;
 }
 
-int VolumeShape::offsetrm(int zz, int cc, int x, int y) {
+int VolumeShape::offsetrm(int zz, int cc, int x, int y) const {
 	return zz * c * w * h + cc * w * h + y * w + x;
+}
+
+int VolumeShape::slice_size() const {
+  return c * w * h;
 }
 
 std::ostream &operator<<(std::ostream &out, VolumeShape shape) {

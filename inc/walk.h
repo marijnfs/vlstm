@@ -92,10 +92,13 @@ inline int walk_dir(char *dname, char *pattern, int spec, std::vector<std::strin
   return res;
 }
 
-inline std::vector<std::string> walk(std::string filename, std::string pattern = "")
+inline std::vector<std::string> walk(std::string filename, std::string pattern = "", std::string filter = "")
 {
-  std::vector<std::string> files;
-  int r = walk_dir(const_cast<char*>(filename.c_str()), const_cast<char*>(pattern.c_str()), WS_DEFAULT|WS_MATCHDIRS, files);
+  if (filename.size() && (filename[filename.size() - 1] == '/'))
+    throw Err("don't end with slash");
+  std::vector<std::string> files, files_tmp;
+  
+  int r = walk_dir(const_cast<char*>(filename.c_str()), const_cast<char*>(pattern.c_str()), WS_DEFAULT|WS_MATCHDIRS, files_tmp);
   switch(r) {
   case WALK_OK:break;
   case WALK_BADIO: throw Err("IO error");
@@ -104,6 +107,10 @@ inline std::vector<std::string> walk(std::string filename, std::string pattern =
   default:
     throw Err("Unknown error?");
   }
+
+  for (auto f : files_tmp)
+    if (f.find(filter) != std::string::npos)
+      files.push_back(f);
   return files;
 }
 

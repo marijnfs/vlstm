@@ -21,14 +21,13 @@ NiftiVolume::NiftiVolume(string filename) {
 
   assert(hdr.datatype == 4);
   vector<uint16_t> uint16_data(data.size());
-  vector<bool> mask(data.size());
-  for (int n(0); n < mask.size(); ++n) if (uint16_data[n] == 0) mask[n] = true;
   in_file.seekg(hdr.vox_offset, ios_base::beg);  
   in_file.read(reinterpret_cast<char*>(&uint16_data[0]), sizeof(uint16_t) * data.size());
 
   copy(uint16_data.begin(), uint16_data.end(), data.begin());
 
-  
+  vector<bool> mask(data.size());
+  for (int n(0); n < mask.size(); ++n) if (uint16_data[n] == 0) mask[n] = true;  
   normalize_masked(&data, mask);
   // for (size_t i(0); i < data.size(); ++i)
   //cout << data[i] << " ";

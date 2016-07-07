@@ -14,10 +14,10 @@ typedef float F;
 struct VolumeShape {
 	int z, c, w, h;
 
-	int size();
-	int offset(int z, int c, int x, int y);
-	int offsetrm(int z, int c, int x, int y);
-
+	int size() const;
+	int offset(int z, int c, int x, int y) const;
+	int offsetrm(int z, int c, int x, int y) const;
+  int slice_size() const;
 };
 
 std::ostream &operator<<(std::ostream &out, VolumeShape shape);
@@ -26,8 +26,8 @@ struct Volume {
 	Volume(VolumeShape shape = VolumeShape{0, 0, 0, 0});
 	Volume(VolumeShape shape, Volume &reuse_buffer);
 	Volume(Volume const &o);
-	Volume(Volume &&o);
-	Volume &operator=(const Volume&);
+  //Volume(Volume &&o);
+  //	Volume &operator=(const Volume&);
 	~Volume();
 
 	float *slice(int z);
@@ -46,11 +46,14 @@ struct Volume {
   	void from_vector(std::vector<F> &vec);
   	void thresholding(std::vector<F> &data, float threshold);
 	void draw_slice(std::string filename, int slice, int channel = 0);
-  void draw_volume(std::string filename, int channel);
+  void draw_volume(std::string filename, int channel = 0);
 	void draw_slice_rgb(std::string filename, int slice);
 	void dropout(float p);
 	float *data();
 
+  void save_file(std::string filename);
+  void load_file(std::string filename);
+  
 	VolumeShape shape;
 	CudaVec *buf;
 	int slice_size;

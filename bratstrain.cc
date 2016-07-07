@@ -24,8 +24,17 @@ int main(int argc, char **argv) {
 	Handler::set_device(0);
 
 
-	string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG/brats_tcia_pat118_0001/VSD.Brain_3more.XX.O.OT.42293/VSD.Brain_3more.XX.O.OT.42293.mha";
-
+	//string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG/brats_tcia_pat118_0001/VSD.Brain_3more.XX.O.OT.42293/VSD.Brain_3more.XX.O.OT.42293.mha";
+	//string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG/brats_tcia_pat149_0001/VSD.Brain.XX.O.MR_Flair.35595/VSD.Brain.XX.O.MR_Flair.35595.mha";
+	string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG";
+	for (auto p : walk(brain_path, ".mha", "Flair")) {
+	  cout << p << endl;
+	  Volume input_vol = read_vtk(p);
+	  cout << "vol shape: " << input_vol.shape << endl;
+	  input_vol.draw_volume("test_%i.png");
+	  return 0;
+	}
+	return 0;
 	string ds = date_string();
 	ostringstream oss;
 	oss << "log/result-" << ds << ".log";
@@ -43,9 +52,10 @@ int main(int argc, char **argv) {
 	// Volume tiff_label = open_tiff("7nm/binary-labels.tif", false, true);
 
 
-	Volume input_vol = read_vtk(brain_path);
+	
 	return 0;
 	//VolumeShape sub_shape{30, 1, 64, 64};
+	/*
 	VolumeNetwork net(input_vol.shape);
 	
 	net.add_vlstm(7, 7, 6);
@@ -65,7 +75,7 @@ int main(int argc, char **argv) {
 	//logger << "subvolume shape " << sub_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
+	*/
 
 
-	cudaDeviceSynchronize();
 }
