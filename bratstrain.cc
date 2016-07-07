@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
 	  Volume input_vol = read_vtk(p);
 	  cout << "vol shape: " << input_vol.shape << endl;
 	  input_vol.draw_volume("test_%i.png");
+
 	  return 0;
 	}
 	return 0;
