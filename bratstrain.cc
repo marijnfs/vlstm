@@ -23,19 +23,14 @@ int main(int argc, char **argv) {
 	//VolumeShape shape{100, 1, 512, 512};
 	Handler::set_device(0);
 
-
-	//string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG/brats_tcia_pat118_0001/VSD.Brain_3more.XX.O.OT.42293/VSD.Brain_3more.XX.O.OT.42293.mha";
-	//string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG/brats_tcia_pat149_0001/VSD.Brain.XX.O.MR_Flair.35595/VSD.Brain.XX.O.MR_Flair.35595.mha";
 	string brain_path = "/home/marijnfs/data/BRATS2015_Training/HGG";
-	for (auto p : walk(brain_path, ".mha", "Flair")) {
-	  cout << p << endl;
-	  Volume input_vol = read_vtk(p);
-	  cout << "vol shape: " << input_vol.shape << endl;
-	  input_vol.draw_volume("test_%i.png");
 
-	  return 0;
-	}
+	Volume vol("joined.vol"), seg("class.vol");
+	vol.draw_volume("joined_%i.png");
+	cout << vol.shape << endl;
 	return 0;
+
+	
 	string ds = date_string();
 	ostringstream oss;
 	oss << "log/result-" << ds << ".log";

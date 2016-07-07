@@ -26,6 +26,7 @@ struct Volume {
 	Volume(VolumeShape shape = VolumeShape{0, 0, 0, 0});
 	Volume(VolumeShape shape, Volume &reuse_buffer);
 	Volume(Volume const &o);
+  Volume(std::string filename);
   //Volume(Volume &&o);
   //	Volume &operator=(const Volume&);
 	~Volume();
@@ -44,7 +45,9 @@ struct Volume {
   	void from_volume(Volume &other);
   	std::vector<F> to_vector();
   	void from_vector(std::vector<F> &vec);
-  	void thresholding(std::vector<F> &data, float threshold);
+  void reshape(VolumeShape s);
+  
+  void thresholding(std::vector<F> &data, float threshold);
 	void draw_slice(std::string filename, int slice, int channel = 0);
   void draw_volume(std::string filename, int channel = 0);
 	void draw_slice_rgb(std::string filename, int slice);
@@ -53,6 +56,8 @@ struct Volume {
 
   void save_file(std::string filename);
   void load_file(std::string filename);
+
+  void insert_volume_at_c(Volume &other, int c);
   
 	VolumeShape shape;
 	CudaVec *buf;
@@ -61,6 +66,10 @@ struct Volume {
 };
 
 Volume &operator-=(Volume &in, Volume &other);
+__global__ void smoothf(float *v, float *to, int std, int c, int X, int Y, int Z, int C);
+void smooth(Volume &in, Volume &out, int std, int c = 0);
+
+Volume join_volumes(std::vector<Volume*> volumes);
 
 struct VolumeSet {
 	VolumeSet(VolumeShape shape);

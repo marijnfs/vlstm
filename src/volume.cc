@@ -26,6 +26,10 @@ Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), buf(re
 	zero();
 }
 
+Volume::Volume(string filename) {
+  load_file(filename);
+}
+
 /*
 Volume::Volume(Volume &&o) : shape(o.shape), buf(o.buf), slice_size(o.slice_size), reused(o.reused) {
 }
@@ -47,6 +51,11 @@ Volume::~Volume(){
     delete buf;
 }
 
+void Volume::reshape(VolumeShape s) {
+  buf->resize(s.size());
+  shape = s;
+  slice_size = shape.slice_size();
+}
 
 float *Volume::slice(int z) {
 	return buf->data + z * slice_size;
@@ -78,7 +87,6 @@ void Volume::save_file(string filename) {
 }
 
 void Volume::load_file(string filename) {
-
   //Read Header
   igzstream in_file(filename.c_str());
   shape.z = byte_read<int32_t>(in_file);
@@ -87,11 +95,11 @@ void Volume::load_file(string filename) {
   shape.h = byte_read<int32_t>(in_file);
 
   //Setup Internal Parameters
-  vector<float> data(shape.size());
-  buf->resize(data.size());
+  buf->resize(shape.size());
   slice_size = shape.slice_size();
 
   //Read Data
+  vector<float> data(shape.size());
   for (auto &v : data)
     v = byte_read<float>(in_file);
 
@@ -126,6 +134,23 @@ void Volume::from_volume(Volume &other) {
 	  throw StringException("sizes don't match");
 	}
 	handle_error( cudaMemcpy(buf->data, other.buf->data, other.size() * sizeof(F), cudaMemcpyDeviceToDevice));
+}
+
+void Volume::insert_volume_at_c(Volume &other, int c) {
+  assert(shape.w == other.shape.w);
+  assert(shape.h == other.shape.h);
+  assert(shape.z == other.shape.z);
+  
+  
+  for (int slice(0); slice < shape.z; ++slice) {
+    float *to = data() + shape.offset(slice, c, 0, 0);
+    float *from = other.data() + other.shape.offset(slice, 0, 0, 0);
+    for (int plane(0); plane < other.shape.c; ++plane) {
+      copy_gpu_to_gpu(from, to, shape.w * shape.h);      
+      from += shape.w * shape.h;
+      to += shape.w * shape.h;
+    }
+  }
 }
 
 int Volume::size() {
@@ -201,6 +226,26 @@ float *Volume::data() {
 	return buf->data;
 }
 
+Volume join_volumes(vector<Volume*> volumes) {
+  int total_c(0);
+  assert(volumes.size() > 0);
+  VolumeShape first_shape(volumes[0]->shape);
+  
+  for (auto v : volumes) {
+    assert(v->shape.z == first_shape.z);
+    assert(v->shape.w == first_shape.w);
+    assert(v->shape.h == first_shape.h);
+    total_c += v->shape.c;
+  }
+
+  Volume joined(VolumeShape{first_shape.z, total_c, first_shape.w, first_shape.h});
+  int c(0);
+  for (auto v : volumes) {
+    joined.insert_volume_at_c(*v, c);
+    c += v->shape.c;
+  }
+  return joined;
+}
 
 int VolumeShape::size() const {
 	return z * c * w * h;

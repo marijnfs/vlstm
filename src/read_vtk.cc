@@ -37,17 +37,21 @@ Volume read_vtk(string filename) {
   vector<float> vec_data(vol.size());
   if (data->GetScalarType() == 3) {
     cout << "unsigned char, assuming classification" << endl;
-    copy_vtk_to_vector<unsigned char>(data, vec_data, depth, width, height, n_channels);
+    int n_classes = 5; //for BRATS
+    vol.reshape(VolumeShape{depth, n_classes, width, height});
+    vec_data.resize(vol.size());
+    copy_vtk_to_class_vector<unsigned char>(data, vec_data, depth, width, height, n_channels);
   }
   if (data->GetScalarType() == 4) {
     cout << "short, assuming data" << endl;
     copy_vtk_to_vector<short>(data, vec_data, depth, width, height, n_channels);
+
+    //Post Process
+    vector<bool> mask(vec_data.size());
+    for (int n(0); n < mask.size(); ++n) if (vec_data[n] == 0) mask[n] = true;
+    normalize_masked(&vec_data, mask);
   }
 
-  //Post Process
-  vector<bool> mask(vec_data.size());
-  for (int n(0); n < mask.size(); ++n) if (vec_data[n] == 0) mask[n] = true;
-  normalize_masked(&vec_data, mask);
 
   
   vol.from_vector(vec_data);
