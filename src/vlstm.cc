@@ -371,6 +371,60 @@ void LSTMShiftOperation::add_operations(VolumeSetMap *reuse) {
 	 // add_op("x", "h", xo, NOW, reuse);
 }
 
+HWOperation::HWOperation(VolumeShape in, int kw, VolumeSetMap *reuse) :
+  SubVolumeOperation(in),
+  hg(in.c, in.c, kw, kw),
+  hh(in.c, in.c, kw, kw),
+  xg(in.c, in.c, kw, kw),
+  xh(in.c, in.c, kw, kw)
+{
+  add_volume("x", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
+  add_volume("h", VolumeShape{in.z, in.c, in.w, in.h}, reuse);
+
+  add_hw_operations(reuse);
+
+  vin = volumes["x"];
+  vout = volumes["h"];
+
+  //xr.bias.init_normal(1., 0.0);
+  //xi.bias.init_normal(1., 0.0);
+  //cc.filter_bank.init_normal(1.0 / cc.filter_bank.n_weights(), 0.);
+}
+
+//~HWOperation::HWOperation(){}
+
+void HWOperation::add_hw_operations(VolumeSetMap *reuse) {
+  bool DELAY(true), NOW(false);
+  //get gates
+  add_op("h", "gl", hg, DELAY, reuse);
+  add_op("gl", "g", sig, NOW, reuse);
+
+  add_op("h", "g", "h", gate, DELAY, reuse);
+  
+  //get hidden input
+  add_op("h", "hhl", hh, DELAY, reuse);
+  add_op("hhl", "h", tan, NOW, reuse);
+
+  //gate hidden input in hidden
+  
+  //add input
+  add_op("x", "xl", xh, NOW, reuse);
+  add_op("xl", "h", tan, NOW, reuse);
+  
+  add_op("x", "xgl", xg, NOW, reuse);
+  add_op("xgl", "xg", sig, NOW, reuse);
+  add_op("x", "xg", "h", gate, NOW, reuse);
+}
+    
+void HWOperation::share(HWOperation &o) {
+  hg.share(o.hg);
+  hh.share(o.hh);
+  xg.share(o.xg);
+  xh.share(o.xh);
+}
+
+
+
 
 VLSTMOperation::VLSTMOperation() : kg(0), ko(0), c(0) { //mostly for overloading
 }
@@ -392,9 +446,13 @@ kg(kg_), ko(ko_), c(c_)
 	operations.push_back(new LSTMOperation(VolumeShape{s.h, s.c, s.w, s.z}, kg, ko, c, &vsm));
 
 
-	clear();
-	for (auto &op : operations)
-		op->forward_dry_run();
+	prepare();
+}
+
+void VLSTMOperation::prepare() {
+  clear();
+  for (auto &op : operations)
+    op->forward_dry_run();
 }
 
 void VLSTMOperation::sharing() {
@@ -495,7 +553,21 @@ void VLSTMOperation::update(float lr) {
 	operations[2]->update(lr);*/
 }
 
-
+HWVOperation::HWVOperation(VolumeShape s, int kw_, VolumeSetMap &vsm) {
+  kw = kw_;
+  c = s.c;
+  
+  operations.push_back(new HWOperation(VolumeShape{s.z, s.c, s.w, s.h}, kw, &vsm));
+  operations.push_back(new HWOperation(VolumeShape{s.z, s.c, s.w, s.h}, kw, &vsm));
+  
+  operations.push_back(new HWOperation(VolumeShape{s.w, s.c, s.z, s.h}, kw, &vsm));
+  operations.push_back(new HWOperation(VolumeShape{s.w, s.c, s.z, s.h}, kw, &vsm));
+  
+  operations.push_back(new HWOperation(VolumeShape{s.h, s.c, s.w, s.z}, kw, &vsm));
+  operations.push_back(new HWOperation(VolumeShape{s.h, s.c, s.w, s.z}, kw, &vsm));
+    
+  prepare();
+}
 
 //Vlstm
 UniVLSTMOperation::UniVLSTMOperation(VolumeShape s, int kg_, int ko_, int c_, VolumeSetMap &vsm)

@@ -76,6 +76,7 @@ struct LSTMOperation : public SubVolumeOperation {
 
 };
 
+
 struct LSTMShiftOperation : public SubVolumeOperation {
 	LSTMShiftOperation(VolumeShape in, int kg, int ko, int c, int dx, int dy, VolumeSetMap *reuse = 0);
 	virtual ~LSTMShiftOperation(){}
@@ -98,6 +99,25 @@ struct LSTMShiftOperation : public SubVolumeOperation {
 };
 
 
+struct HWOperation : public SubVolumeOperation {
+  HWOperation(VolumeShape in, int kw, VolumeSetMap *reuse = 0);
+  virtual ~HWOperation(){}
+
+  // void forward();
+  // void backward();
+  
+  void add_hw_operations(VolumeSetMap *reuse = 0);
+    
+  void share(HWOperation &o);
+
+  ConvolutionOperation<F> hg, hh, xg, xh;
+  
+  GateOperation<F>    gate;   //for gating
+  SigmoidOperation<F> sig;
+  TanhOperation<F>    tan;
+};
+
+
 struct VLSTMOperation : public VolumeOperation {
 	VLSTMOperation();
 	VLSTMOperation(VolumeShape shape, int kg, int ko, int c, VolumeSetMap &vsm);
@@ -109,6 +129,7 @@ struct VLSTMOperation : public VolumeOperation {
 	void register_params(std::vector<CudaPtr<F>> &params, std::vector<CudaPtr<F>> &fast_params, std::vector<CudaPtr<F>> &grads, std::vector<CudaPtr<F>> &fast_grads);
 	VolumeShape output_shape(VolumeShape s);
 
+	void prepare();
 	void sharing();
 	void clear();
 	void clear_grad();
@@ -121,6 +142,13 @@ struct VLSTMOperation : public VolumeOperation {
 	int c;
 
 	std::vector<SubVolumeOperation*> operations;
+};
+
+struct HWVOperation : public VLSTMOperation {
+  HWVOperation(VolumeShape shape, int kw, VolumeSetMap &vsm);
+  void describe(std::ostream &out) { out << "vhw kw:" << kw << " c:" << c; }
+
+  int kw;
 };
 
 struct UniVLSTMOperation : public VLSTMOperation {

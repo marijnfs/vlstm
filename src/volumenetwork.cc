@@ -176,6 +176,18 @@ void VolumeNetwork::add_vlstm(int kg, int ko, int c) {
 	volumes.push_back(new VolumeSet(shape));
 }
 
+void VolumeNetwork::add_hwv(int kw) {
+	cout << "adding hwv" << endl;
+	//cout << "adding: " << last(shapes) << " " << shape << endl;
+
+	auto hwv = new HWVOperation(last(shapes), kw, vsm);
+	auto shape = hwv->output_shape(last(shapes));
+
+	operations.push_back(hwv);
+	shapes.push_back(shape);
+	volumes.push_back(new VolumeSet(shape));
+}
+
 void VolumeNetwork::add_univlstm(int kg, int ko, int c) {
 	cout << "adding unidirectional vlstm" << endl;
 	//cout << "adding: " << last(shapes) << " " << shape << endl;

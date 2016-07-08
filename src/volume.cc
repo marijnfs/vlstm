@@ -26,7 +26,7 @@ Volume::Volume(VolumeShape shape_, Volume &reuse_buffer) : shape(shape_), buf(re
 	zero();
 }
 
-Volume::Volume(string filename) {
+Volume::Volume(string filename) : buf(new CudaVec()), reused(false) {
   load_file(filename);
 }
 
@@ -47,8 +47,11 @@ Volume& Volume::operator=(Volume const &o) {
 */
 
 Volume::~Volume(){
-  if (!reused)
+  cout << "destruct volume" << endl;
+  if (!reused) {
+    cout << "deleting buf" << endl;
     delete buf;
+  }
 }
 
 void Volume::reshape(VolumeShape s) {

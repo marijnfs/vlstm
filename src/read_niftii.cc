@@ -27,7 +27,7 @@ NiftiVolume::NiftiVolume(string filename) {
   copy(uint16_data.begin(), uint16_data.end(), data.begin());
 
   vector<bool> mask(data.size());
-  for (int n(0); n < mask.size(); ++n) if (uint16_data[n] == 0) mask[n] = true;  
+  for (int n(0); n < mask.size(); ++n) if (uint16_data[n] != 0) mask[n] = true;  
   normalize_masked(&data, mask);
   // for (size_t i(0); i < data.size(); ++i)
   //cout << data[i] << " ";
