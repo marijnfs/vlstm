@@ -27,9 +27,18 @@ float Trainer::lr() {
 
 void Trainer::update(CudaVec *param, CudaVec &grad) {
 	float lr_ = lr();
+
+	//tmp
+	c = grad;
+	c *= lr_;
+	*param -= d;
+
+
 	var_decay_bias *= var_decay;
 	mean_decay_bias *= mean_decay;
 	base_lr *= lr_decay;
+	return;
+	
 
 	//variance
 	a = grad;
@@ -52,7 +61,7 @@ void Trainer::update(CudaVec *param, CudaVec &grad) {
 	d = e;
 	// d *= 1.0 / (1.0 - mean_decay_bias);
 	d /= b;
-	d.clip(1.0 / (1.0 - mean_decay));
+	d.clip(4);// 4 times std
 	//update
 	//c.clip(1.);
 	d *= lr_;
@@ -61,7 +70,7 @@ void Trainer::update(CudaVec *param, CudaVec &grad) {
 	// *param *= .99 * lr_; //l2
 
 	first = false;
-
+	
 
 	// print_last(grad.to_vector(), 10);
 	// print_last(rmse.to_vector(), 10);

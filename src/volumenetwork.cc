@@ -13,7 +13,7 @@ void VolumeNetwork::forward() {
 	clear();
 
 	for (int i(0); i < operations.size(); i++) {
-		cout << "===" << i << endl;
+	  //cout << "===" << i << endl;
 		handle_error( cudaGetLastError() );
 
 		operations[i]->forward(volumes[i]->x, volumes[i+1]->x);
@@ -161,6 +161,8 @@ float VolumeNetwork::calculate_loss(Volume &target) {
 	// last(volumes)->diff -= target;
 
 	float norm = last(volumes)->diff.norm2() * 0.5;
+	//float norm = last(volumes)->diff.norm();
+	//return norm;
 	return norm;
 }
 

@@ -8,7 +8,8 @@ using namespace std;
 SubVolumeOperation::SubVolumeOperation(VolumeShape in) :
 in_shape(in),
 vin(0),	vout(0),
-T(in.z)
+T(in.z),
+n_param(0)
 {}
 
 
@@ -111,10 +112,14 @@ void SubVolumeOperation::add_op(string ins, string outs, Operation<F> &op, bool 
 
 	int dt = delay ? 1 : 0;
 
+
 	operations.push_back(new TimeOperation1(op, in, out, dt, beta));
 	if (param) {
 		try {
-			parameters.push_back(&dynamic_cast<Parametrised<F> &>(op));
+		  Parametrised<F> &p = dynamic_cast<Parametrised<F> &>(op);
+		  parameters.push_back(&p);
+		  cout << ins << "-" << outs << ":" << n_param << "-" << (n_param + p.size()) << endl;
+		  n_param += p.size();
 			// cout << "a parameter" << endl;
 		} catch (const std::bad_cast& e) {
 			// cout << "not a parameter" << endl;
@@ -211,7 +216,6 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	bool DELAY(true), NOW(false);
 
 	//Start
-
 	add_op("h", "i", hi, DELAY, reuse);
 	add_op("x", "i", xi, NOW, reuse);
 	add_op("i", "fi", sig, NOW, reuse);
@@ -242,7 +246,7 @@ void LSTMOperation::add_operations(VolumeSetMap *reuse) {
 	add_op("fc", "fo", "h", gate, NOW, reuse);
 
 	//Direct conv
-	// add_op("x", "h", xo, NOW, reuse);
+	//add_op("x", "h", xo, DELAY, reuse);
 
 }
 

@@ -43,9 +43,10 @@ inline void print_last(std::vector<float> vals, int n) {
 
 inline void print_wide(std::vector<float> vals, int n) {
 	int step(vals.size() / n);
+	std::cout << "[";
 	for (size_t i(0); i < vals.size(); i += step)
 		std::cout << vals[i] << " ";
-	std::cout << std::endl;
+	std::cout << "]" << std::endl;
 }
 
 #endif

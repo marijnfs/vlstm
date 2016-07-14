@@ -30,8 +30,8 @@ inline void copy_vtk_to_class_vector(vtkImageData *data, std::vector<float> &vec
     for (size_t y(0); y < height; ++y) {
       for (size_t x(0); x < width; ++x) {
 	//set value in right channel to 1
-	int pos = *reinterpret_cast<T*>(data->GetScalarPointer(x, y, z));
-	vec[z * n_channels * width * height + pos * width * height + y * width + x] = 1;
+	int c = *reinterpret_cast<T*>(data->GetScalarPointer(x, y, z));
+	vec[z * n_channels * width * height + c * width * height + y * width + x] = 1;
 	
       }
     }

@@ -48,7 +48,7 @@ struct SubVolumeOperation {
  	VolumeSet *vin, *vout;
 
 	int T;
-
+  int n_param;
 };
 
 struct LSTMOperation : public SubVolumeOperation {

@@ -41,12 +41,13 @@ int main(int argc, char **argv) {
 	cout << segmentations.size() << endl;
 
 	for (size_t i(0); i < T1.size(); ++i) {
-
+	  
 	  int smooth_std = 8;
 	  cout << "processing: " << i << "/" << T1.size() << " :" << T1[i] << endl;
 
 	  Volume seg = read_vtk(segmentations[i], true);
-		  
+
+	  /*	  
 	  Volume input_t1 = read_vtk(T1[i]);
 	  Volume smoothed_t1(input_t1.shape);
 	  smooth(input_t1, smoothed_t1, smooth_std, 0);
@@ -83,11 +84,14 @@ int main(int argc, char **argv) {
 	  Volume joined = join_volumes(volume_list);
 
 	  cout << joined.shape << endl;
+	  */
+	  
 	  ostringstream joined_filename, seg_filename;
-	  joined_filename << "joined_" << i << ".vol";
+	  //joined_filename << "joined_" << i << ".vol";
 	  seg_filename << "seg_" << i << ".vol";
-	  joined.save_file(joined_filename.str());
+	  //joined.save_file(joined_filename.str());
 	  seg.save_file(seg_filename.str());
+	  
 	}
 
 }

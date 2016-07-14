@@ -55,6 +55,7 @@ Volume::~Volume(){
 }
 
 void Volume::reshape(VolumeShape s) {
+  cout << "reshaping: " << s << endl;
   buf->resize(s.size());
   shape = s;
   slice_size = shape.slice_size();
@@ -136,7 +137,7 @@ void Volume::from_volume(Volume &other) {
 	  cout << shape.size() << " " << other.shape.size() << endl;
 	  throw StringException("sizes don't match");
 	}
-	handle_error( cudaMemcpy(buf->data, other.buf->data, other.size() * sizeof(F), cudaMemcpyDeviceToDevice));
+	copy_gpu_to_gpu(other.buf->data, buf->data, size());
 }
 
 void Volume::insert_volume_at_c(Volume &other, int c) {
@@ -169,7 +170,7 @@ Volume &operator-=(Volume &in, Volume &other) {
 float Volume::norm() {
 	float result(0);
 	handle_error( cublasSdot(Handler::cublas(), size(), buf->data, 1, buf->data, 1, &result) );
-	return sqrt(result) / size();
+	return sqrt(result / size());
 }
 
 float Volume::norm2() {
