@@ -85,12 +85,15 @@ int main(int argc, char **argv) {
 	//net.add_fc(5);
 	net.add_fc(8);
 	net.add_tanh();
+	net.add_vlstm(5, 5, 4);
+	//net.add_fc(8);
+	//net.add_tanh();
 	//net.add_vlstm(5, 5, 4);
 	//net.add_vlstm(5, 5, 4);
 	//net.add_vlstm(3, 3, 8);
 	//net.add_vlstm(3, 3, 5);
-	net.add_fc(8);
-	//	net.add_softmax();
+	net.add_fc(5);
+	net.add_softmax();
 	net.finish();
 
 	if (argc > 1)
@@ -103,7 +106,7 @@ int main(int argc, char **argv) {
 	net.describe(logger.file);
 	logger << "end description\n";
 
-	Trainer trainer(net.param_vec.n, 0.3, 0.000001, 200, .6);
+	Trainer trainer(net.param_vec.n, .01, 0.00001, 200, .97);
 
 	int iteration(0);
 	Volume input, target;
@@ -184,7 +187,7 @@ int main(int argc, char **argv) {
 	    //}
 	  //print_wide(net.volumes[net.volumes.size()-2]->x.to_vector(), 41);
 	    //float loss = net.calculate_loss(target);
-	    float loss = net.calculate_loss(input);
+	    float loss = net.calculate_loss(target);
 	    cout << "loss: " << loss << endl;
 
 	    net.backward();
