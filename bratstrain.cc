@@ -55,10 +55,11 @@ int main(int argc, char **argv) {
 
 	
 
-	//VolumeShape sub_shape{30, 1, 64, 64};
+	VolumeShape sub_input_shape{64, first_input.shape.c, 64, 64};
+	VolumeShape sub_target_shape{64, 5, 64, 64};
 
-	
-	VolumeNetwork net(first_input.shape);
+
+	VolumeNetwork net(sub_input_shape);
 
 	//net.add_fc(8);
 	//net.add_tanh();
@@ -83,9 +84,18 @@ int main(int argc, char **argv) {
 	//net.add_fc(2);
 	//net.add_tanh();
 	//net.add_fc(5);
-	net.add_fc(8);
-	net.add_tanh();
-	net.add_vlstm(5, 5, 4);
+	//net.add_fc(16);
+	//net.add_tanh();
+	net.add_vlstm(7, 7, 32);
+	net.add_vlstm(7, 7, 32);
+	//net.add_fc(16);
+	//net.add_tanh();
+	//net.add_fc(128);
+	//	net.add_tanh();
+	//net.add_fc(256);
+	//net.add_tanh();
+	//net.add_vlstm(5, 5, 4);
+	//net.add_vlstm(5, 5, 4);
 	//net.add_fc(8);
 	//net.add_tanh();
 	//net.add_vlstm(5, 5, 4);
@@ -100,16 +110,17 @@ int main(int argc, char **argv) {
 	  net.load(argv[1]);
 	else
 	  //net.init_normal(0.0, .1);
-	  net.param_vec.init_normal(0.0, .1);
+	  net.param_vec.init_normal(0.0, .05);
 	logger << "begin description\n";
 	//logger << "subvolume shape " << sub_shape << "\n";
 	net.describe(logger.file);
 	logger << "end description\n";
 
-	Trainer trainer(net.param_vec.n, .01, 0.00001, 200, .97);
+	Trainer trainer(net.param_vec.n, .01, 0.00001, 400, .99);
 
 	int iteration(0);
 	Volume input, target;
+	Volume sub_target(sub_target_shape);
 
 	while (true) {
 	  vector<int> indices(input_paths.size());
@@ -124,6 +135,9 @@ int main(int argc, char **argv) {
 	    input.load_file(input_paths[index]);
 	    target.load_file(target_paths[index]);
 
+	    copy_subvolume(input, net.input(), target, sub_target, false, rand()%2, false, false); // rotate, xflip, yflip, zflip
+	    
+	    
 	    /*	    ////TEMP
 	    Volume target(first_input.shape);
 	    target.init_normal(0.0, 1.0);
@@ -169,14 +183,22 @@ int main(int argc, char **argv) {
 	    //return 0;
 
 	    //cout << "param: " << net.param_vec.to_vector() << endl;
-	    //input.draw_volume("in_%i.png", 0);
-	    net.input().from_volume(input);
+	    //net.input().draw_volume("in_%i.png", 0);
+	    //net.input().from_volume(input);
 	    net.forward();
-	    //net.output().draw_volume("output_%i.png", 1);
+
+	    //Draw Stuff
+	    //net.output().draw_volume("output0_%i.png", 0);
+	    //target.draw_volume("target0_%i.png", 0);
+	    //net.output().draw_volume("output1_%i.png", 1);
+	    //target.draw_volume("target1_%i.png", 1);
+	    net.output().draw_volume("output4_%i.png", 4);
+	    sub_target.draw_volume("target4_%i.png", 4);
+	    return 0;
 	    cout << "input: ";
-	    print_wide(input.to_vector(), 101);
+	    print_wide(net.input().to_vector(), 101);
 	    cout << "target: ";
-	    print_wide(target.to_vector(), 101);
+	    print_wide(sub_target.to_vector(), 101);
 	    cout << "output: ";
 	    print_wide(net.output().to_vector(), 101);
 	    //cout << "vol2: ";
@@ -187,7 +209,7 @@ int main(int argc, char **argv) {
 	    //}
 	  //print_wide(net.volumes[net.volumes.size()-2]->x.to_vector(), 41);
 	    //float loss = net.calculate_loss(target);
-	    float loss = net.calculate_loss(target);
+	    float loss = net.calculate_loss(sub_target);
 	    cout << "loss: " << loss << endl;
 
 	    net.backward();
