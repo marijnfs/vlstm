@@ -25,7 +25,30 @@ std::ostream &operator<<(std::ostream &out, VolumeShape shape);
 struct Volume {
 	Volume(VolumeShape shape = VolumeShape{0, 0, 0, 0});
 	Volume(VolumeShape shape, Volume &reuse_buffer);
-	Volume(Volume const &o);
+
+  //Volume(Volume&& o) noexcept : shape(o.shape),  buf(o.buf), slice_size(o.slice_size), reused(o.reused) { }
+  //  Volume(Volume& o) noexcept : shape(o.shape),  buf(o.buf), slice_size(o.slice_size), reused(o.reused) { }
+  //Volume(Volume const &o);
+  Volume (Volume && o) : shape(o.shape),  buf(o.buf), slice_size(o.slice_size), reused(o.reused) { }
+  Volume &operator=(Volume && o) {
+    shape = o.shape;
+    buf = o.buf;
+    slice_size = o.slice_size;
+    reused = o.reused;
+  }
+
+    Volume (Volume & o) : shape(o.shape), slice_size(o.slice_size), reused(o.reused), buf(new CudaVec(0)) {
+      from_volume(o);
+    }
+  
+  Volume &operator=(Volume & o) {
+    shape = o.shape;
+    buf = new CudaVec(0);
+    slice_size = o.slice_size;
+    reused = o.reused;
+    from_volume(o);
+  }
+
   Volume(std::string filename);
   //Volume(Volume &&o);
   //	Volume &operator=(const Volume&);

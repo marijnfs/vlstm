@@ -75,6 +75,10 @@ cuda_add_executable(volviewer  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} volview
 target_link_libraries(volviewer ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
 CUDA_ADD_CUBLAS_TO_TARGET(volviewer)
 
+cuda_add_executable(halfvolumes  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} halfvolumes.cc)
+target_link_libraries(halfvolumes ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+CUDA_ADD_CUBLAS_TO_TARGET(halfvolumes)
+
 #cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} mainbrain.cc)
 #target_link_libraries( mainbrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn )
 #CUDA_ADD_CUBLAS_TO_TARGET(mainbrain)

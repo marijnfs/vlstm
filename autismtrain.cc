@@ -13,7 +13,6 @@
 #include "raw.h"
 #include "trainer.h"
 #include "walk.h"
-#include "read_niftii.h"
 
 using namespace std;
 
@@ -24,8 +23,8 @@ int main(int argc, char **argv) {
 	Handler::set_device(0);
 
 
-	string autism_path = "/home/marijnfs/data/autism/autistic";
-	string control_path = "/home/marijnfs/data/autism/controls";
+	string autism_path = "/home/marijnfs/data/autism/autistic-halved";
+	string control_path = "/home/marijnfs/data/autism/controls-halved";
 
 	string ds = date_string();
 	ostringstream oss;
@@ -45,36 +44,32 @@ int main(int argc, char **argv) {
 
 
 
-	vector<NiftiVolume> volumes;
+	vector<Volume*> volumes;
 	vector<string> paths;
 	vector<bool> has_autism;
-	for (auto p : walk(autism_path, ".nii")) {	  
-	  volumes.push_back(NiftiVolume(p));
+	for (auto p : walk(autism_path, ".vol")) {
+	  volumes.push_back(new Volume(p));
+	  //volumes[volumes.size()-1].load_file(p);
 	  paths.push_back(p);
 	  has_autism.push_back(true);
 	}
 
-	for (auto p : walk(control_path, ".nii")) {	  
-	  volumes.push_back(NiftiVolume(p));
+	for (auto p : walk(control_path, ".vol")) {
+	  volumes.push_back(new Volume(p));
 	  paths.push_back(p);
 	  has_autism.push_back(false);
 	}
 
 	
-	NiftiVolume nifti_volume(paths[0]);
-	Volume input_vol = nifti_volume.get_volume();
-	input_vol.add_normal(0, .6);
-	string name(200, ' ');
-	for (size_t i(0); i < input_vol.shape.z; ++i) {
-	  sprintf(&name[0], "test_%i.png", i);
-	  input_vol.draw_slice(name, i);
-	}
-
+	Volume &input_vol = *volumes[0];
+	input_vol.draw_volume("in_%i.png");
 	//VolumeShape sub_shape{30, 1, 64, 64};
 	VolumeNetwork net(input_vol.shape);
 
-	net.add_vlstm(7, 7, 6);
-	net.add_vlstm(7, 7, 6);
+	net.add_vlstm(7, 7, 32);
+	net.add_fc(32);
+	net.add_tanh();
+	net.add_vlstm(7, 7, 32);
 	net.add_fc(2);
 	net.add_tanh();
 	net.add_classify(2);
@@ -84,7 +79,7 @@ int main(int argc, char **argv) {
 	if (argc > 1)
 	  net.load(argv[1]);
 	else
-	  net.init_normal(0.0, 0.01);
+	  net.init_normal(0.0, 0.03);
 
 	logger << "begin description\n";
 	//logger << "subvolume shape " << sub_shape << "\n";
@@ -95,7 +90,7 @@ int main(int argc, char **argv) {
 	//Training Setup
 	
 	int epoch(0);
-	Trainer trainer(net.param_vec.n, .0001, .0000001, 1000);
+	Trainer trainer(net.param_vec.n, .0001, .0000001, 200, .5);
 	epoch = 0;
 	float last_avg_loss = 9999999.;
 
@@ -108,7 +103,8 @@ int main(int argc, char **argv) {
 
 	  float total_loss(0);
 	  for (auto index : indices) {
-	    Volume input_volume = volumes[index].get_volume();
+	    //index = 0;
+	    Volume &input_volume = *volumes[index];
 	    float noise(.5);
 	    input_volume.add_normal(.0, noise); //
 	    net.input().from_volume(input_volume);
@@ -137,10 +133,12 @@ int main(int argc, char **argv) {
 	    cout << "backward took:" << timer.since() << "\n\n";
 	      
 	    trainer.update(&net.param_vec, net.grad_vec);
+	    cout << "in: ";
+	    print_wide(net.input().to_vector(), 23); //Slow
 	    cout << "grad: ";
-	    print_wide(net.grad_vec.to_vector(), 20); //Slow
+	    print_wide(net.grad_vec.to_vector(), 23); //Slow
 	    cout << "param: ";
-	    print_wide(net.param_vec.to_vector(), 20); //Slow
+	    print_wide(net.param_vec.to_vector(), 23); //Slow
 	    
 	    ++epoch;
 	    cout << "epoch time: " << total_timer.since() <<" lr: " << trainer.lr() << endl;
