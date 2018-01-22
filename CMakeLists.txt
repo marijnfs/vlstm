@@ -30,7 +30,7 @@ include_directories(${VTK_INCLUDE_DIRS})
 
 #list(APPEND CUDA_NVCC_FLAGS "-arch=sm_30;-std=c++11;-O2;-DVERBOSE")
 SET(CUDA_PROPAGATE_HOST_FLAGS OFF)
-set(CUDA_NVCC_FLAGS "-std=c++11;-O3 -I/home/marijnfs/dev/mcdnn/inc")
+set(CUDA_NVCC_FLAGS "-arch=sm_61 -std=c++11;-O3 -I/home/marijnfs/dev/mcdnn/inc")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_RELEASE} -std=c++11 -I/home/marijnfs/dev/mcdnn/inc")
 
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++11 -I/home/cvlstm/dev/mcdnn/inc")
@@ -54,47 +54,51 @@ file(GLOB CPP_HEADERS inc/*.h)
 #set_property(SOURCE ${CU_SOURCE} PROPERTY COMPILE_FLAGS -O3)
 #set_property(SOURCE ${CPP_HEADERS} PROPERTY COMPILE_FLAGS -O3)
 
-cuda_add_executable(autismtrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/autismtrain.cc)
-target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
-CUDA_ADD_CUBLAS_TO_TARGET(autismtrain)
+#cuda_add_executable(autismtrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/autismtrain.cc)
+#target_link_libraries(autismtrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(autismtrain)
 
-cuda_add_executable(autismexamine  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/autismexamine.cc)
-target_link_libraries(autismexamine ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
-CUDA_ADD_CUBLAS_TO_TARGET(autismexamine)
+#cuda_add_executable(autismexamine  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/autismexamine.cc)
+#target_link_libraries(autismexamine ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(autismexamine)
 
-cuda_add_executable(bratstrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/bratstrain.cc)
-target_link_libraries(bratstrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
-CUDA_ADD_CUBLAS_TO_TARGET(bratstrain)
+#cuda_add_executable(bratstrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/bratstrain.cc)
+#target_link_libraries(bratstrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(bratstrain)
 
-cuda_add_executable(bratsprocess  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/bratsprocess.cc)
-target_link_libraries(bratsprocess ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
-CUDA_ADD_CUBLAS_TO_TARGET(bratsprocess)
+#cuda_add_executable(bratsprocess  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/bratsprocess.cc)
+#target_link_libraries(bratsprocess ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(bratsprocess)
 
 
-cuda_add_executable(volviewer  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/volviewer.cc)
-target_link_libraries(volviewer ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
-CUDA_ADD_CUBLAS_TO_TARGET(volviewer)
+#cuda_add_executable(volviewer  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/volviewer.cc)
+#target_link_libraries(volviewer ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(volviewer)
 
-cuda_add_executable(halfvolumes  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/halfvolumes.cc)
-target_link_libraries(halfvolumes ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
-CUDA_ADD_CUBLAS_TO_TARGET(halfvolumes)
+#cuda_add_executable(halfvolumes  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/halfvolumes.cc)
+#target_link_libraries(halfvolumes ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(halfvolumes)
+
+#cuda_add_executable(draw  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/draw.cc)
+#target_link_libraries(draw ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn ${NIFTI_LIBRARIES} ${VTK_LIBRARIES})
+#CUDA_ADD_CUBLAS_TO_TARGET(draw)
 
 #cuda_add_executable(mainbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/mainbrain.cc)
 #target_link_libraries( mainbrain ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} -lleveldb ${OpenCV_LIBS}  -lcudnn -lmcdnn )
 #CUDA_ADD_CUBLAS_TO_TARGET(mainbrain)
 
 
-#cuda_add_executable(icub  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icub.cc)
-#target_link_libraries( icub
-#  -lmcdnn ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS}  -lleveldb   -lcudnn 
-#)
-#CUDA_ADD_CUBLAS_TO_TARGET(icub)
+cuda_add_executable(icub  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icub.cc)
+target_link_libraries( icub
+  -lmcdnn ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS}  -lleveldb   -lcudnn 
+)
+CUDA_ADD_CUBLAS_TO_TARGET(icub)
 
-#cuda_add_executable(icubeval  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icubeval.cc)
-#target_link_libraries( icubeval
-#	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lopencv_core -lopencv_highgui -lopencv_imgproc
-#)
-#CUDA_ADD_CUBLAS_TO_TARGET(icubeval)
+cuda_add_executable(icubeval  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icubeval.cc)
+target_link_libraries( icubeval
+	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lopencv_core -lopencv_highgui -lopencv_imgproc
+)
+CUDA_ADD_CUBLAS_TO_TARGET(icubeval)
 
 
 #cuda_add_executable(evalbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/evalbrain.cc)
