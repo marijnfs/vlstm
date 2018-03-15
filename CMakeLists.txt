@@ -12,13 +12,15 @@ if("${PROJECT_SOURCE_DIR}" STREQUAL "${PROJECT_BINARY_DIR}")
 endif()
 
 find_package(CUDA QUIET REQUIRED)
-find_package(Protobuf REQUIRED)
+#find_package(Protobuf REQUIRED)
 find_package(OpenCV REQUIRED)
-find_package(NIFTI REQUIRED)
-include_directories(${NIFTI_INCLUDE_DIRS})
 
-find_package(VTK REQUIRED)
-include_directories(${VTK_INCLUDE_DIRS})
+
+#find_package(NIFTI REQUIRED)
+#include_directories(${NIFTI_INCLUDE_DIRS})
+
+#find_package(VTK REQUIRED)
+#include_directories(${VTK_INCLUDE_DIRS})
 
 
 #find_library(PROTOBUF_LIBRARY protobuf HINTS /usr/lib/x86_64-linux-gnu REQUIRED)
@@ -88,17 +90,33 @@ file(GLOB CPP_HEADERS inc/*.h)
 #CUDA_ADD_CUBLAS_TO_TARGET(mainbrain)
 
 
-cuda_add_executable(icub  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icub.cc)
-target_link_libraries( icub
-  -lmcdnn ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS}  -lleveldb   -lcudnn 
-)
-CUDA_ADD_CUBLAS_TO_TARGET(icub)
+#cuda_add_executable(icub  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icub.cc)
+#target_link_libraries( icub
+#  -lmcdnn ${CUDA_curand_LIBRARY} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS}  -lleveldb   -lcudnn 
+#)
+#CUDA_ADD_CUBLAS_TO_TARGET(icub)
+#target_include_directories(icub PRIVATE /usr/local/cuda/include)
 
-cuda_add_executable(icubeval  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icubeval.cc)
-target_link_libraries( icubeval
-	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lopencv_core -lopencv_highgui -lopencv_imgproc
+
+
+#cuda_add_executable(icubeval  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/icubeval.cc)
+#target_link_libraries( icubeval
+#	-lmcdnn -lcudnn ${CUDA_curand_LIBRARY} -lleveldb -lopencv_core -lopencv_highgui -lopencv_imgproc
+#)
+#CUDA_ADD_CUBLAS_TO_TARGET(icubeval)
+
+
+cuda_add_library(vlstm ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} ${PROTO_SRCS} ${PROTO_HDRS})
+target_link_libraries( vlstm
+    -lcudnn ${CUDA_curand_LIBRARY} ${CUDA_CUBLAS_LIBRARIES} ${PROTOBUF_LIBRARIES} ${OpenCV_LIBS}
 )
-CUDA_ADD_CUBLAS_TO_TARGET(icubeval)
+
+install(TARGETS vlstm
+    LIBRARY DESTINATION /usr/local/lib
+    ARCHIVE DESTINATION /usr/local/lib
+)
+
+
 
 
 #cuda_add_executable(evalbrain  ${CPP_HEADERS} ${CPP_SOURCE} ${CU_SOURCE} bin/evalbrain.cc)
