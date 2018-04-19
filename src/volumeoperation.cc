@@ -70,6 +70,44 @@ VolumeShape FCVolumeOperation::output_shape(VolumeShape s) {
 	return VolumeShape{s.z, c, s.w, s.h};
 }
 
+///Pool Operation
+PoolVolumeOperation::PoolVolumeOperation(VolumeShape shape_, int kw_, int kh_) :
+  shape(shape_),
+  kw(kw_),
+  kh(kh_),
+  tin(1, shape_.c, shape_.w, shape_.h, 0),
+  tout(1, shape_.c, shape_.w / kw_, shape_.h / kh_, 0),
+  tin_err(1, shape_.c, shape_.w, shape_.h, 0),
+  tout_err(1, shape_.c, shape_.w / kw_, shape_.h / kh_, 0),
+  op(kw_, kh_)
+{ 
+}
+
+void PoolVolumeOperation::forward(Volume &in, Volume &out) {
+  for (int z(0); z < in.shape.z; ++z) {
+    tin.data = in.slice(z);
+    tout.data = out.slice(z);
+    op.forward(tin, tout);
+  }  
+}
+
+void PoolVolumeOperation::backward(VolumeSet &in, VolumeSet &out) {
+  for (int z(0); z < in.shape.z; ++z) {
+    tin.data = in.x.slice(z);
+    tout.data = out.x.slice(z);
+    tout_err.data = out.diff.slice(z);
+    tin_err.data = in.diff.slice(z);
+    op.backward(tin, tout, tout_err, tin_err);
+  }
+}
+  
+VolumeShape PoolVolumeOperation::output_shape(VolumeShape s) {
+  return VolumeShape{s.z, s.c, s.w / kw, s.h / kh};
+}
+
+void PoolVolumeOperation::describe(std::ostream &out) { out << "pool " <<  kw << " " << kh; }
+
+
 ///Classify
 ClassifyVolumeOperation::ClassifyVolumeOperation(VolumeShape shape_, int n_classes_) :
   n_classes(n_classes_),
@@ -82,7 +120,7 @@ ClassifyVolumeOperation::ClassifyVolumeOperation(VolumeShape shape_, int n_class
 {}
 
 void ClassifyVolumeOperation::forward(Volume &in, Volume &out)  {
-	tin.data = in.data();
+        tin.data = in.data();
 	tout.data = out.data();
 	op.forward(tin, tout);
 }
