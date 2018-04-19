@@ -42,6 +42,22 @@ struct FCVolumeOperation : public VolumeOperation {
 	float dropout=0.0;
 };
 
+struct PoolVolumeOperation : public VolumeOperation {
+  PoolVolumeOperation(VolumeShape shape, int kw, int kh);
+
+	void forward(Volume &in, Volume &out);
+	void backward(VolumeSet &in, VolumeSet &out);
+	
+	VolumeShape output_shape(VolumeShape s);
+	void describe(std::ostream &out) { out << "pool " <<  kw << " " << kh; }
+
+	PoolOperation<F> op;
+	VolumeShape shape;
+	int kw, kh;
+	Tensor<F> tin, tout;
+	Tensor<F> tin_err, tout_err;
+};
+
 struct ClassifyVolumeOperation : public VolumeOperation {
  ClassifyVolumeOperation(VolumeShape shape, int n_classes_);
 

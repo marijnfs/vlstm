@@ -166,6 +166,10 @@ float VolumeNetwork::calculate_loss(Volume &target) {
 	return norm;
 }
 
+void VolumeNetwork::add_pool(int kw, int kh) {
+  
+}
+
 void VolumeNetwork::add_vlstm(int kg, int ko, int c) {
 	cout << "adding vlstm" << endl;
 	//cout << "adding: " << last(shapes) << " " << shape << endl;

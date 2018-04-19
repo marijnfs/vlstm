@@ -38,7 +38,8 @@ struct VolumeNetwork {
 	void add_softmax();
 	void add_tanh();
 	void add_sigmoid();
-
+  void add_pool(int kw, int kh);
+  
 	void save(std::string path);
 	void load(std::string path);
 	void describe(std::ostream &out);
